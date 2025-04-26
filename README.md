@@ -1,3 +1,7 @@
-# Coprocessor Interface Library (Assembly)
+<h1 align="center">📚 Library Communication Assembly with FPGA</h1>
 
-This is an Assembly library designed to interface with the custom coprocessor developed in Problem 1 of the *Digital Systems* course. The library provides low-level access to the coprocessor's functions and allows for efficient data movement and interaction.
+</br>
+
+<h2>📄 Introdução</h2>
+
+Este projeto oferece uma estrutura para comunicação eficiente entre o Hard Processor System (HPS) e um coprocessador em Field-Programmable Gate Array (FPGA) na placa Terasic DE1-SoC, utilizando linguagem assembly ARMv7.
