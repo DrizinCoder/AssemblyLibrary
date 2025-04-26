@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 int menu();
 void matrix_read(int n, short int *matrix);
-void matrix_result_visualization(int n, short int *matrix);
 void operationWithOneMatrix(int size, short int *matrix1);
+void matrix_result_visualization(int n, short int *matrix);
 void operationWithTwoMatrices(int size, short int *matrix1, short int *matrix2);
 
 int main()
@@ -91,10 +92,21 @@ int main()
         continue;
       }
 
+      clock_t start, end;
+      double execute_time = 0;
+
+      start = clock();
+
       // Enviar os dados para o driver.
       // esperar o retorno do resultado.
 
-      if (opcode == 7) // Determinante retorna um escalar
+      end = clock();
+
+      execute_time = ((double)(end - start) / CLOCKS_PER_SEC);
+
+      printf("\nTempo de execução: %fs +/- 0.000002s \n", execute_time);
+
+      if (opcode == 7) // Visualização do resultado
       {
         printf("\nDeterminante: %hd\n", matrixr[0]);
       }
