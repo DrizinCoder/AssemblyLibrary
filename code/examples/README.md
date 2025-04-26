@@ -39,19 +39,19 @@ Estudo autônomo para entender:
    - Linux instalado (testado no Ubuntu 20.04+)
    - Processador Intel/AMD x86-64
    - Pacote `build-essential` instalado:
-     ```bash
-     sudo apt-get update && sudo apt-get install build-essential
-     ```
+
+```bash
+  sudo apt-get update && sudo apt-get install build-essential
+```
 
 2. **Compilação e Execução**:
 
-   ```bash
-   # Navegue até o diretório do projeto
-   cd caminho/para/o/projeto
+```bash
+ # Navegue até o diretório do projeto
+ user@host: /home/user/.../AssemblyLibray/code/examples
+```
 
-   # Compile o programa
-   make
-
-   # Execute o programa
-   ./program
-   ```
+```bash
+ # Compile o programa
+ make run
+```
