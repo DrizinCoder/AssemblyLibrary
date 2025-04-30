@@ -46,7 +46,36 @@ choice_size:
 
     @ Mostra confirmacao
     bl  print_valid_size
-    b   _start             @ Volta ao menu
+    b   choice_operation    @ Vai para escolha de operacao
+
+choice_operation:
+    @ Mostra menu de operacoes
+    bl  print_operation_menu
+    bl  read_input
+
+    @ Verifica a opcao
+    ldr r1, =input_buffer
+    ldrb r0, [r1]           @ Carrega o digito
+    ldrb r2, [r1, #1]       @ Carrega o segundo byte
+    cmp r2, #'\n'           @ Verifica se e enter
+    bne invalid_operation   @ Se nao for, invalido
+
+    @ Converte ASCII para numero
+    sub r0, r0, #'0'
+
+    @ Verifica se esta entre 1 e 7
+    cmp r0, #1
+    blt invalid_operation
+    cmp r0, #7
+    bgt invalid_operation
+
+    @ Operacao valida, volta ao menu
+    b   _start
+
+invalid_operation:
+    @ Mostra mensagem de erro
+    bl  print_invalid_operation
+    b   choice_operation    @ Tenta novamente
 
 invalid_size:
     @ Mostra mensagem de erro
@@ -73,6 +102,14 @@ print_prompt_size:
     mov r0, #1
     ldr r1, =prompt_size_msg
     mov r2, #prompt_size_msg_len
+    swi 0
+    bx  lr
+
+print_operation_menu:
+    mov r7, #4
+    mov r0, #1
+    ldr r1, =operation_menu_msg
+    mov r2, #operation_menu_msg_len
     swi 0
     bx  lr
 
@@ -104,6 +141,14 @@ print_invalid_size:
     swi 0
     bx  lr
 
+print_invalid_operation:
+    mov r7, #4
+    mov r0, #1
+    ldr r1, =invalid_operation_msg
+    mov r2, #invalid_operation_msg_len
+    swi 0
+    bx  lr
+
 read_input:
     mov r7, #3
     mov r0, #0
@@ -122,6 +167,10 @@ prompt_size_msg:
     .ascii "\nDigite o tamanho da matriz (2-5): "
 prompt_size_msg_len = . - prompt_size_msg
 
+operation_menu_msg:
+    .ascii "\nOperações disponíveis:\n1. Soma\n2. Subtração\n3. Multiplicação\n4. Escalar\n5. Oposta\n6. Transposta\n7. Determinante\nEscolha: "
+operation_menu_msg_len = . - operation_menu_msg
+
 valid_size_msg:
     .ascii "\nTamanho definido: "
 valid_size_msg_len = . - valid_size_msg
@@ -129,6 +178,10 @@ valid_size_msg_len = . - valid_size_msg
 invalid_size_msg:
     .ascii "\nTamanho invalido! Digite um valor entre 2 e 5.\n"
 invalid_size_msg_len = . - invalid_size_msg
+
+invalid_operation_msg:
+    .ascii "\nOperação inválida! Digite um valor entre 1 e 7.\n"
+invalid_operation_msg_len = . - invalid_operation_msg
 
 newline:
     .ascii "\n"
