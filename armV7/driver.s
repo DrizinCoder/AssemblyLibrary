@@ -86,14 +86,21 @@ svc #0
     mov r7, #5
     svc #0
 
+    cmp r0, #0
+    blt fail_open
+
     @ syscall mmpa
-    mov r1, #4096
+    mov r0, #0
+    mov r1, #1000
     mov r2, #3
     mov r3, #1
     ldr r4, =0xFF200000
     mov r5, #0
     mov r7, #192
     svc #0
+
+    cmp r0, #-1
+    beq fail_open
 
     @ envia numero para FPGA via LW_AXI_Bridge
     ldrb r1, [r10]
@@ -128,4 +135,10 @@ convert_loop:
     b convert_loop
 end_convert:
     bx lr                   @ Retorna
+
+fail_open:
+    mov r0, #-1
+    mov r7, #1
+    mov r0, #4
+    svc #0
 
