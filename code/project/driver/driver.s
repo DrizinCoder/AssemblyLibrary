@@ -76,6 +76,20 @@ choice_operation:
     b   fill_matrix
 
 fill_matrix:
+    @ multiplicacao de NxN | N = row num = col num
+    mul r0, r5, r5
+    mov r5, r0
+
+    add r0, r5, #'0'
+    ldr r1, =char_buffer 
+    strb r0, [r1]       
+    
+    @ Syscall para imprimir r5
+    mov r0, #1          
+    ldr r1, =char_buffer 
+    mov r2, #1         
+    mov r7, #4         
+    swi #0
  
     b _start
 
@@ -195,4 +209,7 @@ newline:
     .ascii "\n"
 
 input_buffer:
-    .space 2                @ Armazena a entrada + \n
+    .space 2                
+
+char_buffer: 
+    .byte 0   
