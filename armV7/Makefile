@@ -1,6 +1,3 @@
-# Configurações
-IMAGE_NAME = armv7-dev
-CONTAINER_NAME = armv7-builder
 SOURCE = driver.s
 OUTPUT = driver
 
@@ -9,12 +6,12 @@ all: run
 
 # Compila o código ARMv7
 compile:
-	arm-linux-gnueabihf-as $(SOURCE) -o $(OUTPUT).o
-	arm-linux-gnueabihf-ld $(OUTPUT).o -o $(OUTPUT)
+	as $(SOURCE) -o $(OUTPUT).o
+	ld $(OUTPUT).o -o $(OUTPUT)
 
 # Executa via QEMU
 run: compile
-	qemu-arm-static ./$(OUTPUT)
+	./$(OUTPUT)
 
 # Limpa os arquivos gerados
 clean:
