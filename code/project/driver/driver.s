@@ -4,22 +4,54 @@ _start:
     @ Mostra o menu inicial
     bl  print_menu
 
-    @ Lê a opção do usuário
+    @ Le a opcao do usuario
     bl  read_input
 
-    @ Compara a opção
+    @ Compara a opcao
     ldr r1, =input_buffer
-    ldrb r0, [r1]           @ Carrega o primeiro byte do input
-    cmp r0, #'1'            @ Opção '1'?
+    ldrb r0, [r1]           @ Carrega o primeiro byte
+    cmp r0, #'1'            @ Opcao '1'?
     beq op1                 @ Se sim, vai para op1
-    cmp r0, #'2'            @ Opção '2'?
+    cmp r0, #'0'            @ Opcao '0'?
     beq exit_program        @ Se sim, sai
-    b _start                @ Se não, reinicia
+    b _start                @ Se nao, reinicia
 
 op1:
-    @ --- Operação: Soma de dois números ---
-    bl  print_msg_op1       @ Mostra mensagem da opção 1
-    bl  exit_program        @ (Substitua por sua lógica customizada)
+    @ Operacao: Escolher tamanho da matriz
+    b   choice_size        
+
+choice_size:
+    @ Pede o tamanho da matriz
+    bl  print_prompt_size
+    bl  read_input
+
+    @ Verifica se a entrada e valida
+    ldr r1, =input_buffer
+    ldrb r0, [r1]           @ Carrega o digito
+    ldrb r2, [r1, #1]       @ Carrega o segundo byte
+    cmp r2, #'\n'           @ Verifica se e enter
+    bne invalid_size       @ Se nao for, invalido
+
+    @ Converte ASCII para numero
+    sub r0, r0, #'0'
+
+    @ Verifica se esta entre 2 e 5
+    cmp r0, #2
+    blt invalid_size
+    cmp r0, #5
+    bgt invalid_size
+
+    @ Armazena o tamanho em r5
+    mov r5, r0
+
+    @ Mostra confirmacao
+    bl  print_valid_size
+    b   _start             @ Volta ao menu
+
+invalid_size:
+    @ Mostra mensagem de erro
+    bl  print_invalid_size
+    b   choice_size        @ Tenta novamente
 
 exit_program:
     @ Syscall exit (1)
@@ -27,43 +59,79 @@ exit_program:
     mov r0, #0
     swi 0
 
-@ ====== Funções Auxiliares ======
+@ ====== Funcoes Auxiliares ======
 print_menu:
-    @ Imprime o menu (syscall write = 4)
     mov r7, #4
     mov r0, #1
     ldr r1, =menu_msg
     mov r2, #menu_msg_len
     swi 0
-    bx  lr                  @ Retorna para _start
+    bx  lr
 
-print_msg_op1:
-    @ Imprime mensagem da opção 1
+print_prompt_size:
     mov r7, #4
     mov r0, #1
-    ldr r1, =op1_msg
-    mov r2, #op1_msg_len
+    ldr r1, =prompt_size_msg
+    mov r2, #prompt_size_msg_len
+    swi 0
+    bx  lr
+
+print_valid_size:
+    mov r7, #4
+    mov r0, #1
+    ldr r1, =valid_size_msg
+    mov r2, #valid_size_msg_len
+    swi 0
+    
+    ldr r1, =input_buffer
+    mov r7, #4
+    mov r0, #1
+    mov r2, #1
+    swi 0
+    
+    mov r7, #4
+    mov r0, #1
+    ldr r1, =newline
+    mov r2, #1
+    swi 0
+    bx  lr
+
+print_invalid_size:
+    mov r7, #4
+    mov r0, #1
+    ldr r1, =invalid_size_msg
+    mov r2, #invalid_size_msg_len
     swi 0
     bx  lr
 
 read_input:
-    @ Lê input do usuário (syscall read = 3)
     mov r7, #3
-    mov r0, #0              @ stdin
+    mov r0, #0
     ldr r1, =input_buffer
-    mov r2, #2              @ Lê 2 bytes (opção + Enter)
+    mov r2, #2
     swi 0
     bx  lr
 
 @ ====== Dados ======
 .data
 menu_msg:
-    .ascii "\nMenu:\n1. Fazer operação\n2. Sair\nEscolha: "
+    .ascii "\nMenu:\n1. Operações\n0. Sair\nEscolha: "
 menu_msg_len = . - menu_msg
 
-op1_msg:
-    .ascii "\nVocê escolheu a opção 1!\n"
-op1_msg_len = . - op1_msg
+prompt_size_msg:
+    .ascii "\nDigite o tamanho da matriz (2-5): "
+prompt_size_msg_len = . - prompt_size_msg
+
+valid_size_msg:
+    .ascii "\nTamanho definido: "
+valid_size_msg_len = . - valid_size_msg
+
+invalid_size_msg:
+    .ascii "\nTamanho invalido! Digite um valor entre 2 e 5.\n"
+invalid_size_msg_len = . - invalid_size_msg
+
+newline:
+    .ascii "\n"
 
 input_buffer:
-    .space 2                @ Armazena a opção + \n
+    .space 2                @ Armazena a entrada + \n
