@@ -69,8 +69,16 @@ choice_operation:
     cmp r0, #7
     bgt invalid_operation
 
-    @ Operacao valida, volta ao menu
-    b   _start
+    @ Armazena o tamanho em r5
+    mov r6, r0
+
+    @ Operacao valida, seguir para preenchimento
+    b   fill_matrix
+
+fill_matrix:
+ 
+    b _start
+
 
 invalid_operation:
     @ Mostra mensagem de erro
