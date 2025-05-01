@@ -64,21 +64,30 @@ fill_matrix:
     ldr r1, =size_matrix
     ldrb r5, [r1]
     ldr r1, =operation_current
-    ldrb r6. [r1]
+    ldrb r6, [r1]
 
     mul r0, r5, r5 @ NxN = quantidade de valores para as matrizes
 
-    add r0, r0, #'0'
     ldr r1, =square_size_matrix 
     strb r0, [r1]       
-
-    mov r0, #1          
-    mov r2, #1         
-    mov r7, #4         
-    swi 0 @ Syscall para imprimir r0 = r5*r5
  
-    b _start
+    b fill_matrix_A
 
+fill_matrix_A:
+
+    b fill_matrix_B
+
+fill_matrix_B:
+
+    b execute_operation
+
+execute_operation:
+
+    b free_matrix
+
+free_matrix:
+    b _start
+    
 
 invalid_operation: @ Mensagem de erro da opcao de operacao
     bl  print_invalid_operation
