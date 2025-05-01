@@ -116,65 +116,10 @@ fill_loop_B:
     b fill_loop_B
 
 execute_operation:
-    @ Mostra 2° elemento de A
-    ldr r0, =matrix_A_ptr
-    ldr r0, [r0]
-    ldrb r1, [r0, #1]
-    add r1, r1, #'0'
-    ldr r2, =element_buffer
-    strb r1, [r2]
-    
     mov r7, #4
     mov r0, #1
-    ldr r1, =element_msg_A
-    mov r2, #element_msg_A_len
-    svc #0
-    
-    mov r7, #4
-    mov r0, #1
-    ldr r1, =element_buffer
-    mov r2, #1
-    svc #0
-    
-    mov r7, #4
-    mov r0, #1
-    ldr r1, =newline
-    mov r2, #1
-    svc #0
-    
-    @ Mostra 3° elemento de B
-    ldr r0, =matrix_B_ptr
-    ldr r0, [r0]
-    ldrb r1, [r0, #2]
-    mov r3, #10
-    udiv r2, r1, r3
-    mul r4, r2, r3
-    sub r5, r1, r4
-    
-    add r2, r2, #'0'
-    ldr r6, =element_buffer
-    strb r2, [r6]
-    
-    add r5, r5, #'0'
-    ldr r6, =element_buffer+1
-    strb r5, [r6]
-    
-    mov r7, #4
-    mov r0, #1
-    ldr r1, =element_msg_B
-    mov r2, #element_msg_B_len
-    svc #0
-    
-    mov r7, #4
-    mov r0, #1
-    ldr r1, =element_buffer
-    mov r2, #2
-    svc #0
-    
-    mov r7, #4
-    mov r0, #1
-    ldr r1, =newline
-    mov r2, #1
+    ldr r1, =valid_fill_matrix_msg
+    mov r2, #valid_fill_matrix_msg_len
     svc #0
 
     b free_matrices
@@ -295,13 +240,11 @@ invalid_size_msg_len = . - invalid_size_msg
 invalid_operation_msg: .ascii "\nOperação inválida! Digite um valor entre 1 e 7.\n"
 invalid_operation_msg_len = . - invalid_operation_msg
 
-element_msg_A: .ascii "\n2° elemento de A: "
-element_msg_A_len = . - element_msg_A
+valid_fill_matrix_msg: .ascii "\nPreenchimento realizado com sucesso!\n"
+valid_fill_matrix_msg_len = . - valid_fill_matrix_msg
 
-element_msg_B: .ascii "3° elemento de B: "
-element_msg_B_len = . - element_msg_B
-
-newline: .ascii "\n"
+newline: 
+    .ascii "\n"
 
 input_buffer: .space 2
 element_buffer: .space 2
