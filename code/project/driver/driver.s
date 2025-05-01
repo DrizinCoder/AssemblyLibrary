@@ -6,7 +6,8 @@ _start:
     bl  print_menu
     bl  read_input
 
-    ldr r1, =input_buffer
+    ldr r1, =input_buffer_2
+    ldr r1, =input_buffer_6
     ldrb r0, [r1]           
     cmp r0, #'1'            
     beq choice_size                 
@@ -18,7 +19,8 @@ choice_size:
     bl  print_prompt_size
     bl  read_input
 
-    ldr r1, =input_buffer
+    ldr r1, =input_buffer_2
+    ldr r1, =input_buffer_6
     ldrb r0, [r1]          
     ldrb r2, [r1, #1]      
     cmp r2, #'\n'          
@@ -40,7 +42,8 @@ choice_operation:
     bl  print_operation_menu
     bl  read_input
 
-    ldr r1, =input_buffer
+    ldr r1, =input_buffer_2
+    ldr r1, =input_buffer_6
     ldrb r0, [r1]          
     ldrb r2, [r1, #1]      
     cmp r2, #'\n'          
@@ -87,39 +90,169 @@ fill_matrix:
     add r0, r0, r2
     svc #0
 
-    @ Preenche matriz A
-    ldr r0, =matrix_A_ptr
-    ldr r0, [r0]           @ Endereço base
     ldr r1, =square_size_matrix
-    ldr r1, [r1]           @ Tamanho total
-    mov r2, #0             @ Contador
+    ldr r4, [r1]           @ Quantidade de valores
+    mov r3, #0             @ Contador inicializado em zero
+
+
 fill_loop_A:
-    cmp r2, r1
-    bge fill_matrix_B
-    add r3, r2, #1         @ Valor = índice + 1
-    strb r3, [r0, r2]      @ Armazena byte
-    add r2, r2, #1         @ Incrementa contador
+    push {r4}                  @ Preserva r4 para evitar corrupção
+    ldr r1, =square_size_matrix
+    ldr r4, [r1]               @ Recarrega r4 para garantir integridade
+    cmp r3, r4                 @ Compara contador (r3) com tamanho total (r4)
+    bge fill_loop_A_end        @ Se r3 >= r4, vai para fill_loop_B
+
+    mov r7, #4                 @ syscall write
+    mov r0, #1                 @ stdout
+    ldr r1, =prompt_input_value_A
+    mov r2, #prompt_input_value_A_len
+    svc #0
+
+    ldr r1, =input_buffer_6
+    mov r2, #6
+    mov r0, #0
+clear_buffer_A:
+    strb r0, [r1], #1
+    subs r2, r2, #1
+    bne clear_buffer_A
+
+    mov r7, #3                 @ syscall read
+    mov r0, #0                 @ stdin
+    ldr r1, =input_buffer_6
+    mov r2, #6
+    svc #0
+
+    @ --- Converte a entrada para inteiro ---
+    push {r3}                  @ Preserva r3 antes de chamar a função
+    ldr r0, =input_buffer_6
+    bl string_to_int_8bit      @ Retorna em r5
+    pop {r3}                   @ Restaura r3
+
+    @ --- Armazena o valor na matriz A ---
+    ldr r0, =matrix_A_ptr
+    ldr r0, [r0]               @ Carrega endereço base da matriz A
+    strb r5, [r0, r3]          @ Armazena o byte na posição r3
+
+    @ --- Incrementa o contador e repete ---
+    add r3, r3, #1
+    pop {r4}                   @ Restaura r4
     b fill_loop_A
 
-fill_matrix_B:
-    ldr r0, =matrix_B_ptr
-    ldr r0, [r0]           @ Endereço base
-    ldr r1, =square_size_matrix
-    ldr r1, [r1]           @ Tamanho total
-    mov r2, #0             @ Contador
-fill_loop_B:
-    cmp r2, r1
-    bge execute_operation
-    add r3, r2, #10        @ Valor = índice + 10
-    strb r3, [r0, r2]      @ Armazena byte
-    add r2, r2, #1         @ Incrementa contador
+fill_loop_A_end:
+    pop {r4}                   @ Restaura r4 antes de sair
     b fill_loop_B
+
+fill_loop_B:
+    mov r3, #0                 @ RESETA O CONTADOR PARA 0
+fill_loop_B_start:
+    push {r4}                  @ Preserva r4
+    ldr r1, =square_size_matrix
+    ldr r4, [r1]               @ Recarrega r4
+    cmp r3, r4                 @ Compara contador (r3) com tamanho total (r4)
+    bge fill_loop_B_end        @ Se r3 >= r4, vai para execute_operation
+
+    @ --- Imprime o prompt para o valor da matriz B ---
+    mov r7, #4                 @ syscall write
+    mov r0, #1                 @ stdout
+    ldr r1, =prompt_input_value_B
+    mov r2, #prompt_input_value_B_len
+    svc #0
+
+    @ --- Limpa o buffer de entrada ---
+    ldr r1, =input_buffer_6
+    mov r2, #6
+    mov r0, #0
+clear_buffer_B:
+    strb r0, [r1], #1
+    subs r2, r2, #1
+    bne clear_buffer_B
+
+    @ --- Lê a entrada do usuário ---
+    mov r7, #3                 @ syscall read
+    mov r0, #0                 @ stdin
+    ldr r1, =input_buffer_6
+    mov r2, #6
+    svc #0
+
+    @ --- Converte a entrada para inteiro ---
+    push {r3}                  @ Preserva r3
+    ldr r0, =input_buffer_6
+    bl string_to_int_8bit      @ Retorna em r5
+    pop {r3}                   @ Restaura r3
+
+    @ --- Armazena o valor na matriz B ---
+    ldr r0, =matrix_B_ptr
+    ldr r0, [r0]               @ Carrega endereço base da matriz B
+    strb r5, [r0, r3]          @ Armazena o byte na posição r3
+
+    @ --- Incrementa o contador e repete ---
+    add r3, r3, #1
+    pop {r4}                   @ Restaura r4
+    b fill_loop_B_start
+
+fill_loop_B_end:
+    pop {r4}                   @ Restaura r4
+    b execute_operation
+
+string_to_int_8bit:
+    push {r3, r4, r8, lr}      @ Preserva r3, r4, r8 e lr
+    mov r1, #0                 @ Inicializa resultado (r1)
+    mov r2, #0                 @ Sinal: 0=positivo, 1=negativo
+    mov r3, #10                @ Base decimal
+
+    ldrb r4, [r0], #1          @ Lê o primeiro caractere
+    cmp r4, #'-'               @ Verifica se é negativo
+    bne check_digits
+    mov r2, #1                 @ Marca como negativo
+    ldrb r4, [r0], #1          @ Lê o próximo caractere
+
+check_digits:
+    cmp r4, #'0'               @ Verifica se é dígito (ASCII '0'-'9')
+    blt invalid_input
+    cmp r4, #'9'
+    bgt invalid_input
+    sub r4, r4, #'0'           @ Converte ASCII para inteiro
+    mul r8, r1, r3             @ Multiplica por 10
+    mov r1, r8
+    add r1, r1, r4             @ Adiciona o dígito
+    ldrb r4, [r0], #1          @ Lê próximo caractere
+    cmp r4, #10                @ Verifica se é '\n' (fim da entrada)
+    bne check_digits
+
+    @ --- Aplica o sinal (se negativo) ---
+    cmp r2, #1
+    bne check_range
+    rsb r1, r1                 @ Inverte o sinal
+
+check_range:
+    @ --- Verifica se está dentro de -128 a 127 ---
+    cmp r1, #127
+    bgt invalid_input
+    cmp r1, #-128
+    blt invalid_input
+
+    mov r5, r1                 @ Retorna o valor em r5
+    pop {r3, r4, r8, pc}
+
+invalid_input:
+    mov r7, #4
+    mov r0, #1
+    ldr r1, =prompt_input_value_invalid
+    mov r2, #prompt_input_value_invalid_len
+    svc #0
+    mov r5, #0                 @ Retorna 0 em caso de erro
+    pop {r3, r4, r8, pc}
 
 execute_operation:
     mov r7, #4
     mov r0, #1
     ldr r1, =valid_fill_matrix_msg
     mov r2, #valid_fill_matrix_msg_len
+    svc #0
+
+    ldr r1, =matrix_A_ptr
+    ldrb r1, [r1]
+    mov r2, #6
     svc #0
 
     b free_matrices
@@ -184,7 +317,8 @@ print_valid_size:
     mov r2, #valid_size_msg_len
     svc #0
     
-    ldr r1, =input_buffer
+    ldr r1, =input_buffer_2
+    ldr r1, =input_buffer_6
     mov r7, #4
     mov r0, #1
     mov r2, #1
@@ -216,42 +350,52 @@ print_invalid_operation:
 read_input:
     mov r7, #3
     mov r0, #0
-    ldr r1, =input_buffer
+    ldr r1, =input_buffer_2
+    ldr r1, =input_buffer_6
     mov r2, #2
     svc #0
     bx lr
 
 .section .data
-menu_msg: .ascii "\nMenu:\n1. Operações\n0. Sair\nEscolha: "
-menu_msg_len = . - menu_msg
 
-prompt_size_msg: .ascii "\nDigite o tamanho da matriz (2-5): "
-prompt_size_msg_len = . - prompt_size_msg
+    menu_msg: .ascii "\nMenu:\n1. Operações\n0. Sair\nEscolha: "
+    menu_msg_len = . - menu_msg
 
-operation_menu_msg: .ascii "\nOperações disponíveis:\n1. Soma\n2. Subtração\n3. Multiplicação\n4. Escalar\n5. Oposta\n6. Transposta\n7. Determinante\nEscolha: "
-operation_menu_msg_len = . - operation_menu_msg
+    prompt_size_msg: .ascii "\nDigite o tamanho da matriz (2-5): "
+    prompt_size_msg_len = . - prompt_size_msg
 
-valid_size_msg: .ascii "\nTamanho definido: "
-valid_size_msg_len = . - valid_size_msg
+    operation_menu_msg: .ascii "\nOperações disponíveis:\n1. Soma\n2. Subtração\n3. Multiplicação\n4. Escalar\n5. Oposta\n6. Transposta\n7. Determinante\nEscolha: "
+    operation_menu_msg_len = . - operation_menu_msg
 
-invalid_size_msg: .ascii "\nTamanho inválido! Digite um valor entre 2 e 5.\n"
-invalid_size_msg_len = . - invalid_size_msg
+    valid_size_msg: .ascii "\nTamanho definido: "
+    valid_size_msg_len = . - valid_size_msg
 
-invalid_operation_msg: .ascii "\nOperação inválida! Digite um valor entre 1 e 7.\n"
-invalid_operation_msg_len = . - invalid_operation_msg
+    invalid_size_msg: .ascii "\nTamanho inválido! Digite um valor entre 2 e 5.\n"
+    invalid_size_msg_len = . - invalid_size_msg
 
-valid_fill_matrix_msg: .ascii "\nPreenchimento realizado com sucesso!\n"
-valid_fill_matrix_msg_len = . - valid_fill_matrix_msg
+    invalid_operation_msg: .ascii "\nOperação inválida! Digite um valor entre 1 e 7.\n"
+    invalid_operation_msg_len = . - invalid_operation_msg
 
-newline: 
-    .ascii "\n"
+    valid_fill_matrix_msg: .ascii "\nPreenchimento realizado com sucesso!\n"
+    valid_fill_matrix_msg_len = . - valid_fill_matrix_msg
 
-input_buffer: .space 2
-element_buffer: .space 2
+    prompt_input_value_A: .ascii "\nDigite o valor no vetor A: "
+    prompt_input_value_A_len = . - prompt_input_value_A
 
-size_matrix: .byte 0
-square_size_matrix: .word 0
-operation_current: .byte 0
+    prompt_input_value_B: .ascii "\nDigite o valor do vetor B: "
+    prompt_input_value_B_len = . - prompt_input_value_B
 
-matrix_A_ptr: .word 0
-matrix_B_ptr: .word 0
+    prompt_input_value_invalid: .ascii "\nValor incorreto!\n"
+    prompt_input_value_invalid_len = . - prompt_input_value_invalid
+
+    newline: .ascii "\n"
+
+    input_buffer_2: .space 2
+    input_buffer_6: .space 6
+
+    size_matrix: .byte 0
+    square_size_matrix: .word 0
+    operation_current: .byte 0
+
+    matrix_A_ptr: .word 0
+    matrix_B_ptr: .word 0
