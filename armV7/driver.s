@@ -91,7 +91,7 @@ _start:
 
     @ syscall mmpa
     mov r0, #0
-    mov r1, #1000
+    mov r1, #4096
     mov r2, #3
     mov r3, #1
     mov r4, r0
