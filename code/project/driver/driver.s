@@ -244,16 +244,11 @@ invalid_input:
     pop {r3, r4, r8, pc}
 
 execute_operation:
-    mov r7, #4
-    mov r0, #1
+    mov r7, #4              @ Chamada de sistema para write (4)
+    mov r0, #1              @ File descriptor (1 = stdout)
     ldr r1, =valid_fill_matrix_msg
     mov r2, #valid_fill_matrix_msg_len
-    svc #0
-
-    ldr r1, =matrix_A_ptr
-    ldrb r1, [r1]
-    mov r2, #6
-    svc #0
+    svc #0                  @ Faz a chamada de sistema para imprimir a mensagem
 
     b free_matrices
 
