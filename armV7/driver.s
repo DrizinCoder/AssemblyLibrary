@@ -34,17 +34,17 @@ _start:
     strb r0, [r10]
 
     @ Imprime num1 (para debug)
-mov r7, #4
-mov r0, #1
-ldr r1, =string_3
-mov r2, #4
-svc #0
+    mov r7, #4
+    mov r0, #1
+    ldr r1, =string_3
+    mov r2, #4
+    svc #0
 
-mov r7, #4
-mov r0, #1
-ldr r1, =num1
-mov r2, #1
-svc #0
+    mov r7, #4
+    mov r0, #1
+    ldr r1, =num1
+    mov r2, #1
+    svc #0
 
     @ --- Leitura do segundo número ---
     @ Escreve prompt (syscall 4)
@@ -67,18 +67,18 @@ svc #0
     ldr r8, =num2
     strb r0, [r8]
 
-@ Imprime num2 (para debug)
-mov r7, #4
-mov r0, #1
-ldr r1, =string_4
-mov r2, #4
-svc #0
+    @ Imprime num2 (para debug)
+    mov r7, #4
+    mov r0, #1
+    ldr r1, =string_4
+    mov r2, #4
+    svc #0
 
-mov r7, #4
-mov r0, #1
-ldr r1, =num2
-mov r2, #1
-svc #0
+    mov r7, #4
+    mov r0, #1
+    ldr r1, =num2
+    mov r2, #1
+    svc #0
 
      @ Syscall open
     ldr r0, =dev_mem
@@ -94,13 +94,12 @@ svc #0
     mov r1, #1000
     mov r2, #3
     mov r3, #1
-    ldr r4, =0xFF200000
-    mov r5, #0
+    mov r4, r0
+    ldr r5, =0xFF200000
     mov r7, #192
     svc #0
-
     cmp r0, #-1
-    beq fail_open
+    beq fail_mmap
 
     @ envia numero para FPGA via LW_AXI_Bridge
     ldrb r1, [r10]
@@ -139,6 +138,11 @@ end_convert:
 fail_open:
     mov r0, #-1
     mov r7, #1
-    mov r0, #4
+    mov r0, #68
     svc #0
 
+fail_mmap:
+    mov r0, #-1
+    mov r7, #1
+    mov r0, #4
+    svc #0
