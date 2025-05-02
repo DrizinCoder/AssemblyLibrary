@@ -3,6 +3,40 @@
 .section .text
 
 _start:
+
+    @ --- abre arquivo /dev/mem ---
+    ldr r0, =dev_mem
+    mov r1, #2
+    mov r7, #5
+    svc #0
+
+    @ --- Verifica abertura do arquivo ---
+    cmp r0, #0
+    blt fail_open
+
+    @ --- Salva o file descriptor ---
+    ldr r1, =file_descriptor
+    str r0, [r1]
+
+    @ --- syscall mmpa ---
+    mov r4, r0
+    mov r0, #0
+    mov r1, #1000
+    mov r2, #3
+    mov r3, #1
+    ldr r5, =0xFF200000
+    mov r7, #192
+    svc #0
+
+    @ --- Verifica mapeamento da memória ---
+    cmp r0, #-1
+    beq fail_mmap
+
+    @ --- Salve o Endereço base mapeado ---
+    ldr r1, =mmapped_address
+    str r0, [r1]
+
+    @ --- Menu ---
     bl  print_menu
     bl  read_input
 
@@ -11,9 +45,15 @@ _start:
     ldrb r0, [r1]           
     cmp r0, #'1'            
     beq choice_size                 
-    cmp r0, #'0'           
-    beq exit_program       
+    cmp r0, #'0'   
+    beq exit_program 
     b _start
+
+fail_open:
+    mov r0, #-1
+    mov r7, #1
+    mov r0, #68
+    svc #0
 
 choice_size:
     bl  print_prompt_size
@@ -394,3 +434,7 @@ read_input:
 
     matrix_A_ptr: .word 0
     matrix_B_ptr: .word 0
+
+    file_descriptor: .word 0
+    mmapped_address: .word 0
+    dev_mem: .ascii "/dev/mem"
