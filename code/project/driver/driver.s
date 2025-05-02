@@ -55,6 +55,12 @@ fail_open:
     mov r0, #68
     svc #0
 
+fail_mmap:
+    mov r0, #-1
+    mov r7, #1
+    mov r0, #4
+    svc #0
+
 choice_size:
     bl  print_prompt_size
     bl  read_input
