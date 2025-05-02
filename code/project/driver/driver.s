@@ -443,4 +443,4 @@ read_input:
 
     file_descriptor: .word 0
     mmapped_address: .word 0
-    dev_mem: .ascii "/dev/mem"
+    dev_mem: .asciz "fake_mem.bin" @ Arquivo falso para testes sem FPGA 
