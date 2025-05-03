@@ -360,6 +360,13 @@ execute_done:
     mov r2, #valid_fill_matrix_msg_len
     svc #0                  @ Faz a chamada de sistema para imprimir a mensagem
 
+wait_result:
+    bl print_waiting_matrix_result
+
+    ldrb r1, [r4, #0x53]
+    cmp r1, #1
+    beq wait_result
+
     b free_matrices
 
 free_matrices:
@@ -396,6 +403,14 @@ print_menu:
     mov r0, #1
     ldr r1, =menu_msg
     mov r2, #menu_msg_len
+    svc #0
+    bx lr
+
+print_waiting_matrix_result:
+    mov r7, #4
+    mov r0, #1
+    ldr r1, =matrix_result_msg
+    mov r2, #matrix_result_msg_len
     svc #0
     bx lr
 
@@ -492,6 +507,9 @@ read_input:
 
     prompt_input_value_invalid: .ascii "\nValor incorreto!\n"
     prompt_input_value_invalid_len = . - prompt_input_value_invalid
+
+    matrix_result_msg: .ascii "\nEsperando Matriz resultado pela FPGA...\n"
+    matrix_result_msg_len = .-matrix_result_msg
 
     newline: .ascii "\n"
 
