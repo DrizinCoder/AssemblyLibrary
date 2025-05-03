@@ -322,6 +322,33 @@ copy_loop_B:
     b copy_loop_B
 
 copy_B_done:
+    ldr r5, =operation_current
+    ldr r5, [r5]
+    mov r6, #0x50 
+    strb r5, [r4, r6]           @ Escreve instrução no endereço em 0xFF20000 + 0x50
+
+    cmp r3, #4                  @ N = 2? 
+    moveq r8, #0x10             @ opcode 0x10
+    moveq r9, #0x50              @ opcode 0x50
+    
+    cmp r3, #9                  @ N = 3?
+    moveq r8, #0x18             @ opcode 0x18
+    moveq r9, #0x58             @ opcode 0x58
+    
+    cmp r3, #16                 @ N = 4?
+    moveq r8, #0x20             @ opcode 0x20
+    moveq r9, #0x60             @ opcode 0x60
+    
+    cmp r3, #25                 @ N = 5?
+    moveq r8, #0x28             @ opcode 0x28
+    moveq r9, #0x68             @ opcode 0x68
+    
+    add r6, r6, #1              @ offset = (2*N²)+1
+    strb r8, [r4, r6]           @ Escreve opconde em oxFF20000 + 0x51
+    
+    add r6, r6, #1              @ offset = (2*N²) + 2
+    strb r9, [r4, r6]           @ Escreve opconde em oxFF20000 + 0x52
+
     b execute_done
 
 execute_done:
