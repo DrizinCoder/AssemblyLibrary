@@ -291,40 +291,42 @@ invalid_input:
 
 execute_operation:
 
-    ldr r1, =matrix_A_ptr
-    ldr r1, [r1]
-    ldr r2, =matrix_B_ptr
+    ldr r1, =matrix_A_ptr               @ Carrega ponteiro da matriz A
+    ldr r1, [r1]            
+    ldr r2, =matrix_B_ptr               @ Carrega ponteiro da matriz B
     ldr r2, [r2]
-    ldr r3, =square_size_matrix
+    ldr r3, =square_size_matrix         @ Carrega informação do tamanho da matriz
     ldr r3, [r3]
-    ldr r4, =mmapped_address
+    ldr r4, =mmapped_address            @ Carrega ponteiro para o endereço 0xFF200000
     ldr r4, [r4]
 
-    mov r5, #0
+    mov r5, #0              @Contador
 copy_loop_A:
-    cmp r5, r3
-    bge copy_A_done
-    ldrb r6, [r1, r5]
-    strb r6, [r4, r5]
-    add r5, r5, #1
+    cmp r5, r3              @ Compara contador com N²
+    bge copy_A_done         @ Caso tenha finalizado execução ir para copy_A_done
+    
+    ldrb r6, [r1, r5]               @ Carrega valor N da matriz A
+    strb r6, [r4, r5]               @ Envia valor obtido para o endereço mapeado
+    add r5, r5, #1                  @ Atualiza contador
     b copy_loop_A
 
 copy_A_done:
-    mov r5, #0
+    mov r5, #0              @ Contador
 
 copy_loop_B:
-    cmp r5, r3
-    bge copy_B_done
-    ldrb r6, [r2, r5]
-    add r7, r5, r3
-    strb r6, [r4, r7]
-    add r5, r5, #1
+    cmp r5, r3              @ Compara contador com N²
+    bge copy_B_done         @ Caso tenha finalizado execução ir para copy_B_done
+    
+    ldrb r6, [r2, r5]               @ Carrega valor da matriz A
+    add r7, r5, r3                  @ Adiciona offset
+    strb r6, [r4, r7]               @ Envia valor obtido para o endereço mapeado
+    add r5, r5, #1                  @Atualiza contador
     b copy_loop_B
 
 copy_B_done:
-    ldr r5, =operation_current
-    ldr r5, [r5]
-    mov r6, #0x50 
+    ldr r5, =operation_current              @Obtem operação escolhida
+    ldr r5, [r5]        
+    mov r6, #0x50
     strb r5, [r4, r6]           @ Escreve instrução no endereço em 0xFF20000 + 0x50
 
     cmp r3, #4                  @ N = 2? 
