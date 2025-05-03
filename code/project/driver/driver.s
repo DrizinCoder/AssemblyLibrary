@@ -367,6 +367,31 @@ wait_result:
     cmp r1, #1
     beq wait_result
 
+    bl print_result_matrix
+    mov r5, #0
+    mov r8, #0x34
+
+load_matrix_from_FPGA:
+    ldrb r1, [r4, r8]
+
+    ldr r0, =result
+    bl byte_to_ascii
+
+    @ --- Exibe número ---
+    mov r7, #4
+    mov r0, #1
+    ldr r1, =result
+    mov r2, #4
+    svc #0
+
+    bl print_blanc_space
+
+    
+    add r5, r5, #1
+    add r8, r8, #1
+    cmp r5, r3
+    blt load_matrix_from_FPGA
+
     b free_matrices
 
 free_matrices:
@@ -411,6 +436,14 @@ print_waiting_matrix_result:
     mov r0, #1
     ldr r1, =matrix_result_msg
     mov r2, #matrix_result_msg_len
+    svc #0
+    bx lr
+
+print_result_matrix:
+    mov r7, #4
+    mov r0, #1
+    ldr r1, =FPGA_result_msg
+    mov r2, #FPGA_result_msg_len
     svc #0
     bx lr
 
@@ -459,6 +492,14 @@ print_invalid_size:
     svc #0
     bx lr
 
+print_blanc_space:
+    mov r7, #4
+    mov r0, #1
+    ldr r1, =blanc_space
+    mov r2, #blanc_space_len
+    svc #0
+    bx lr
+
 print_invalid_operation:
     mov r7, #4
     mov r0, #1
@@ -474,6 +515,82 @@ read_input:
     ldr r1, =input_buffer_6
     mov r2, #2
     svc #0
+    bx lr
+
+@ --- Procedimento que converte byte para ASCII ---
+@ Input: r1 = byte a ser convertido
+@        r0 = endereço do buffer de saída
+@ Output: String ASCII armazenada no buffer
+byte_to_ascii:
+    push {r4-r6, lr}
+    mov r4, r0              @ Salva endereço do buffer
+    mov r5, r1              @ Salva byte a ser convertido
+    mov r6, #0              @ Contador de digitos
+
+    cmp r5, #0
+    bne convert_loop_ascii
+    mov r1, #'0'
+    strb r1, [r4]
+    mov r1, #0
+    strb r1, [r4, #1]
+    b end_ascii
+
+convert_loop_ascii:
+    cmp r5, #0
+    beq reverse_digits
+    mov r0, r5
+    mov r1, #10
+    bl divide               @ r0 = quociente, r1 = resto
+    mov r5, r0              @ atualiza numero
+    add r1, r1, #'0'        @ converte resto para ASCII
+    strb r1, [r4, r6]       @ armazena digito
+    add r6, r6, #1          @ incrementa o contador
+    b convert_loop_ascii
+
+reverse_digits:
+    mov r0, r4              @ Buffer de inicio
+    mov r1, r6              @ tamanho
+    bl reverse_string
+    mov r1, #0
+    strb r1, [r4, r6]       @ /0
+end_ascii:
+    pop {r4-r6, lr}
+    bx lr
+
+@ --- r0/r1 ---
+@ Retorna: r0 = quociente, r1 = resto
+divide:
+    mov r2, r0              @ Dividendo
+    mov r0, #0              @ Quociente
+divide_loop:
+    cmp r2, r1
+    blt divide_end
+    sub r2, r2, r1
+    add r0, r0, #1
+    b divide_loop
+divide_end:
+    mov r1, r2              @ Resto
+    bx lr
+
+@ --- Reverse string ---
+@ Input: r0 = endereço da string, r1 = tamanho
+reverse_string:
+    push {r2-r5, lr}
+    mov r2, r0              @ Começo da string
+    add r3, r0, r1
+    sub r3, r3, #1          @ final da string
+reverse_loop:
+    cmp r2, r3
+    bge reverse_end
+    ldrb r4, [r2]
+    ldrb r5, [r3]
+    strb r5, [r2]
+    strb r4, [r3]
+    add r2, r2, #1
+    sub r3, r3, #1
+    b reverse_loop
+reverse_end:
+    pop {r2-r5, lr}
     bx lr
 
 .section .data
@@ -509,7 +626,13 @@ read_input:
     prompt_input_value_invalid_len = . - prompt_input_value_invalid
 
     matrix_result_msg: .ascii "\nEsperando Matriz resultado pela FPGA...\n"
-    matrix_result_msg_len = .-matrix_result_msg
+    matrix_result_msg_len = . -matrix_result_msg
+
+    FPGA_result_msg: .ascii "\nMatriz Resultado: "
+    FPGA_result_msg_len = . -FPGA_result_msg
+
+    blanc_space: .ascii " "
+    blanc_space_len = . -blanc_space
 
     newline: .ascii "\n"
 
@@ -526,3 +649,5 @@ read_input:
     file_descriptor: .word 0
     mmapped_address: .word 0
     dev_mem: .asciz "fake_mem.bin" @ Arquivo falso para testes sem FPGA 
+
+    result: .space 4            @Buffer para ASCII result
