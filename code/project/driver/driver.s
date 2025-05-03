@@ -290,6 +290,41 @@ invalid_input:
     pop {r3, r4, r8, pc}
 
 execute_operation:
+
+    ldr r1, =matrix_A_ptr
+    ldr r1, [r1]
+    ldr r2, =matrix_B_ptr
+    ldr r2, [r2]
+    ldr r3, =square_size_matrix
+    ldr r3, [r3]
+    ldr r4, =mmapped_address
+    ldr r4, [r4]
+
+    mov r5, #0
+copy_loop_A:
+    cmp r5, r3
+    bge copy_A_done
+    ldrb r6, [r1, r5]
+    strb r6, [r4, r5]
+    add r5, r5, #1
+    b copy_loop_A
+
+copy_A_done:
+    mov r5, #0
+
+copy_loop_B:
+    cmp r5, r3
+    bge copy_B_done
+    ldrb r6, [r2, r5]
+    add r7, r5, r3
+    strb r6, [r4, r7]
+    add r5, r5, #1
+    b copy_loop_B
+
+copy_B_done:
+    b execute_done
+
+execute_done:
     mov r7, #4              @ Chamada de sistema para write (4)
     mov r0, #1              @ File descriptor (1 = stdout)
     ldr r1, =valid_fill_matrix_msg
