@@ -317,8 +317,8 @@ copy_loop_B:
     cmp r5, r3              @ Compara contador com N²
     bge copy_B_done         @ Caso tenha finalizado execução ir para copy_B_done
     
-    ldrb r6, [r2, r5]               @ Carrega valor da matriz A
-    add r7, r5, r3                  @ Adiciona offset
+    ldrb r6, [r2, r5]               @ Carrega valor da matriz B
+    add r7, r5, #25                  @ Adiciona offset
     strb r6, [r4, r7]               @ Envia valor obtido para o endereço mapeado
     add r5, r5, #1                  @Atualiza contador
     b copy_loop_B
