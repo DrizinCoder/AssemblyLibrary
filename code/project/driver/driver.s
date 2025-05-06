@@ -24,7 +24,7 @@ _start:
     mov r1, #1000
     mov r2, #3
     mov r3, #1
-    ldr r5, =0xFF200000
+    ldr r5, =0xFF200
     mov r7, #192
     svc #0
 
@@ -648,6 +648,6 @@ reverse_end:
 
     file_descriptor: .word 0
     mmapped_address: .word 0
-    dev_mem: .asciz "fake_mem.bin" @ Arquivo falso para testes sem FPGA 
+    dev_mem: .asciz "/dev/mem" @ Arquivo falso para testes sem FPGA 
 
     result: .space 4            @Buffer para ASCII result
