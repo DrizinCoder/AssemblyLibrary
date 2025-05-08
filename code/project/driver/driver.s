@@ -50,6 +50,16 @@ _start:
     b _start
 
 fail_open:
+    ldr r1, =open_error_msg
+    mov r2, #open_error_msg_len
+    mov r7, #4          @ syscall write
+    svc #0
+    
+    @ Sair com código 68
+    mov r7, #1
+    mov r0, #68
+    svc #0
+
     mov r0, #-1
     mov r7, #1
     mov r0, #68
@@ -627,6 +637,9 @@ reverse_end:
 
     matrix_result_msg: .ascii "\nEsperando Matriz resultado pela FPGA...\n"
     matrix_result_msg_len = . -matrix_result_msg
+
+    open_error_msg: .ascii "Erro: Não foi possível abrir /dev/mem"
+    open_error_msg_len = . - open_error_msg
 
     FPGA_result_msg: .ascii "\nMatriz Resultado: "
     FPGA_result_msg_len = . -FPGA_result_msg
