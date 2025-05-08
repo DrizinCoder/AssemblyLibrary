@@ -661,6 +661,6 @@ reverse_end:
 
     file_descriptor: .word 0
     mmapped_address: .word 0
-    dev_mem: .asciz "/dev/mem" @ Arquivo falso para testes sem FPGA 
+    dev_mem: .asciz "test_mem.bin"   @ Usa o arquivo dummy
 
     result: .space 4            @Buffer para ASCII result
