@@ -139,6 +139,9 @@ operation_flow:
     /* Envia matrizes para FPGA */
     bl send_matrix_A
     bl send_matrix_B
+
+     /* Executa operação */
+    bl execute_operation
         
     /* Volta ao menu */
     b main_loop
@@ -501,3 +504,31 @@ wait_instr_ok:
     strb r2, [r1]
     
     pop {pc}
+
+/* Executa operação na FPGA */
+execute_operation:
+    push {lr}
+    /* Envia código da operação */
+    ldr r0, =current_op
+    ldrb r0, [r0]
+    bl send_instruction
+    
+    /* Sinaliza START */
+    ldr r0, =CTRL_HPS_FPGA
+    mov r1, #START_MASK
+    strb r1, [r0]
+    
+    /* Aguarda DONE */
+wait_operation_done:
+    ldr r0, =CTRL_FPGA_HPS
+    ldrb r1, [r0]
+    tst r1, #DONE_MASK
+    beq wait_operation_done
+    
+    /* Limpa START */
+    ldr r0, =CTRL_HPS_FPGA
+    mov r1, #0
+    strb r1, [r0]
+    
+    pop {pc}
+
