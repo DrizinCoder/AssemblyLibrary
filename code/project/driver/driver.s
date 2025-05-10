@@ -120,9 +120,16 @@ main_loop:
     ldr r1, =input_buffer
     ldrb r0, [r1]
     cmp r0, #'1'
-    beq exit_program
+    beq operation_flow
     cmp r0, #'0'
     beq exit_program
+    b main_loop
+
+operation_flow:
+    /* Seleciona tamanho da matriz */
+    bl select_matrix_size
+        
+    /* Volta ao menu */
     b main_loop
 
 exit_program:
@@ -158,7 +165,7 @@ init_memory:
     mov r3, #0x1             @ Flags: MAP_SHARED
 
     /* --- Argumentos adicionais para mmap2 --- */
-    ldr r5, #PIO_BASE        @ Endereço físico base da FPGA (PIO)
+    ldr r5, =PIO_BASE        @ Endereço físico base da FPGA (PIO)
     push {r5}                @ Offset físico (empilha)
     mov r5, #0               @ Offset adicional
     push {r5}
@@ -227,3 +234,43 @@ read_input:
     mov r2, #2              @ Lê 2 bytes (1 char + newline)
     svc #0
     pop {pc}
+
+/* Seleciona tamanho da matriz */
+select_matrix_size:
+    push {lr}
+    
+    /* Mostra prompt */
+    mov r7, #SYS_WRITE
+    mov r0, #STDOUT
+    ldr r1, =size_prompt
+    ldr r2, =size_prompt_len
+    svc #0
+    
+    /* Lê entrada */
+    bl read_input
+    
+    /* Converte para número e valida */
+    ldr r1, =input_buffer
+    ldrb r0, [r1]
+    sub r0, r0, #'0'        @ Converte ASCII para número
+    cmp r0, #2
+    blt invalid_size
+    cmp r0, #5
+    bgt invalid_size
+    
+    /* Armazena tamanho */
+    ldr r1, =size_matrix
+    strb r0, [r1]
+    
+    pop {pc}
+    
+invalid_size:
+    /* Tamanho inválido - pede novamente */
+    push {lr}
+    mov r7, #SYS_WRITE
+    mov r0, #STDOUT
+    ldr r1, =invalid_input
+    ldr r2, =invalid_input_len
+    svc #0
+    pop {pc}
+
