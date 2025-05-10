@@ -140,8 +140,14 @@ operation_flow:
     bl send_matrix_A
     bl send_matrix_B
 
-     /* Executa operação */
+    /* Executa operação */
     bl execute_operation
+
+    /* Recebe resultado */
+    bl receive_result
+    
+    /* Mostra resultado */
+    bl print_result
         
     /* Volta ao menu */
     b main_loop
@@ -532,3 +538,189 @@ wait_operation_done:
     
     pop {pc}
 
+/* Recebe resultado da FPGA */
+receive_result:
+    push {r4-r7, lr}
+    ldr r4, =OUT_MATRIX
+    ldr r5, =size_matrix
+    ldrb r5, [r5]
+    mul r5, r5, r5          @ Calcula N²
+    ldr r6, =result_buffer
+    
+    mov r7, #0              @ Contador
+receive_loop:
+    cmp r7, r5
+    bge receive_done
+    
+    /* Sinaliza Read Request */
+    ldr r0, =CTRL_HPS_FPGA
+    ldrb r1, [r0]
+    orr r1, r1, #READ_REQ_MASK
+    strb r1, [r0]
+    
+    /* Aguarda Read Valid */
+wait_read_valid:
+    ldr r0, =CTRL_FPGA_HPS
+    ldrb r1, [r0]
+    tst r1, #READ_VALID_MASK
+    beq wait_read_valid
+    
+    /* Lê 4 bytes */
+    ldr r0, [r4]
+    str r0, [r6, r7, lsl #2]
+    
+    /* Limpa Read Request */
+    ldr r0, =CTRL_HPS_FPGA
+    ldrb r1, [r0]
+    bic r1, r1, #READ_REQ_MASK
+    strb r1, [r0]
+    
+    add r7, r7, #1
+    b receive_loop
+
+receive_done:
+    /* Verifica overflow */
+    ldr r0, =CTRL_FPGA_HPS
+    ldrb r1, [r0]
+    tst r1, #OVERFLOW_MASK
+    beq no_overflow
+    
+    /* Mostra mensagem de overflow */
+    mov r7, #SYS_WRITE
+    mov r0, #STDOUT
+    ldr r1, =overflow_msg
+    ldr r2, =overflow_msg_len
+    svc #0
+
+no_overflow:
+    pop {r4-r7, pc}
+
+
+ // FUNÇÕES AUXILIARES
+/* Lê entrada do usuário */
+read_input:
+    push {lr}
+    mov r7, #SYS_READ
+    mov r0, #STDIN
+    ldr r1, =input_buffer
+    mov r2, #2              @ Lê 2 bytes (1 char + newline)
+    svc #0
+    pop {pc}
+
+/* Imprime resultado */
+print_result:
+    push {r4-r8, lr}
+    ldr r4, =result_buffer
+    ldr r5, =size_matrix
+    ldrb r5, [r5]           @ Tamanho da matriz (N)
+    
+    /* Imprime cabeçalho */
+    mov r7, #SYS_WRITE
+    mov r0, #STDOUT
+    ldr r1, =result_msg
+    ldr r2, =result_msg_len
+    svc #0
+    
+    mov r6, #0              @ Contador de linhas
+    mov r7, #0              @ Contador de elementos
+print_row_loop:
+    cmp r6, r5
+    bge print_done
+    
+    mov r8, #0              @ Contador de colunas
+print_col_loop:
+    cmp r8, r5
+    bge print_row_end
+    
+    /* Calcula índice: (linha * N) + coluna */
+    mul r0, r6, r5
+    add r0, r0, r8
+    ldr r1, [r4, r0, lsl #2] @ Carrega valor
+    
+    /* Converte número para string */
+    sub sp, sp, #12         @ Reserva espaço na pilha
+    mov r2, sp
+    bl int_to_string
+    
+    /* Imprime número */
+    mov r7, #SYS_WRITE
+    mov r0, #STDOUT
+    mov r1, sp
+    mov r2, #11             @ Tamanho máximo de um inteiro
+    svc #0
+    
+    /* Imprime espaço */
+    mov r7, #SYS_WRITE
+    mov r0, #STDOUT
+    ldr r1, =space
+    ldr r2, =space_len
+    svc #0
+    
+    add sp, sp, #12         @ Libera espaço da pilha
+    add r8, r8, #1          @ Próxima coluna
+    b print_col_loop
+
+print_row_end:
+    /* Imprime newline */
+    mov r7, #SYS_WRITE
+    mov r0, #STDOUT
+    ldr r1, =newline
+    ldr r2, =newline_len
+    svc #0
+    
+    add r6, r6, #1          @ Próxima linha
+    b print_row_loop
+
+print_done:
+    pop {r4-r8, pc}
+
+/* Converte inteiro para string (simplificado) */
+int_to_string:
+    push {r4-r5, lr}
+    mov r4, r1              @ Buffer de saída
+    mov r5, #10             @ Divisor
+    
+    /* Verifica se é zero */
+    cmp r0, #0
+    bne not_zero
+    mov r1, #'0'
+    strb r1, [r4]
+    mov r1, #0
+    strb r1, [r4, #1]
+    b conversion_done
+    
+not_zero:
+    /* Converte dígitos */
+    mov r1, #0              @ Contador de dígitos
+convert_loop:
+    cmp r0, #0
+    beq reverse_digits
+    
+    udiv r2, r0, r5         @ Divide por 10
+    mul r3, r2, r5
+    sub r3, r0, r3          @ Resto
+    add r3, r3, #'0'        @ Converte para ASCII
+    
+    /* Armazena dígito na pilha */
+    push {r3}
+    add r1, r1, #1
+    mov r0, r2
+    b convert_loop
+    
+reverse_digits:
+    mov r2, #0              @ Contador
+
+reverse_loop:
+    cmp r2, r1
+    bge conversion_done
+    
+    pop {r3}
+    strb r3, [r4, r2]
+    add r2, r2, #1
+    b reverse_loop
+    
+conversion_done:
+    /* Adiciona terminador nulo */
+    mov r3, #0
+    strb r3, [r4, r2]
+    pop {r4-r5, pc}
