@@ -13,6 +13,7 @@
 .equ OPCODE_BIT2,      0x04    @ Bit 2: Operation code bit 2 (1 << 2)
 .equ READ_REQ_MASK,    0x08    @ Bit 3: Read Request (1 << 3)
 .equ WRITE_VALID_MASK, 0x10    @ Bit 4: Write Valid (1 << 4)
+.equ RESET_MASK,       0x20    @ Bit 5: Reset (1 << 5)  
 
 /* Máscaras de bits para CTRL_FPGA_HPS (FPGA → HPS) */
 .equ OVERFLOW_MASK,    0x01    @ Bit 0: Overflow (1 << 0)
