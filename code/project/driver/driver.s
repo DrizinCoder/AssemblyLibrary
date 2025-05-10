@@ -1,6 +1,6 @@
 // DEFINIÇÕES DE ENDEREÇOS E CONSTANTES
- 
 /* Endereços PIO (Parallel Input/Output) */
+.equ PIO_BASE,         0xFF200      @ Endereço base do PIO
 .equ IN_MATRIX,        0xFF200      @ Envio de matriz (4 bytes)
 .equ OUT_MATRIX,       0xFF204      @ Recebimento de matriz (4 bytes)
 .equ CTRL_HPS_FPGA,    0xFF208      @ Controle HPS->FPGA (1 byte)
@@ -58,7 +58,6 @@
 .equ STDOUT,           1
 
 // SEÇÃO DE DADOS
-
 .section .data
 /* Variáveis para mapeamento de memória */
 file_descriptor:    .word 0         @ Armazena o descritor de arquivo
@@ -104,3 +103,127 @@ current_op:      .byte 0
 
 /* Buffer de entrada */
 input_buffer:    .space 2
+
+// CÓDIGO PRINCIPAL
+.section .text
+.global _start
+
+_start:
+    bl init_memory
+
+main_loop:
+    /* Mostra menu principal */
+    bl show_menu
+    bl read_input
+    
+    /* Processa escolha */
+    ldr r1, =input_buffer
+    ldrb r0, [r1]
+    cmp r0, #'1'
+    beq exit_program
+    cmp r0, #'0'
+    beq exit_program
+    b main_loop
+
+exit_program:
+    /* Sai do programa */
+    mov r7, #SYS_EXIT
+    mov r0, #0
+    svc #0
+
+// FUNÇÕES PRINCIPAIS
+/* Inicialização */
+init_memory:
+    push {r4-r7, lr}
+
+    /* --- Abre /dev/mem para acesso à memória física --- */
+    ldr r0, =dev_mem         @ Carrega endereço da string "/dev/mem"
+    mov r1, #2              
+    mov r7, #SYS_OPEN        @ Syscall open()
+    svc #0
+
+    /* --- Verifica se o arquivo foi aberto corretamente --- */
+    cmp r0, #0
+    blt mmap_fail            @ Se retorno < 0, houve erro
+
+    /* --- Armazena o file descriptor --- */
+    ldr r1, =file_descriptor
+    str r0, [r1]
+
+    /* --- Configuração do mmap2 --- */
+    mov r4, r0               @ Preserva file descriptor em r4
+    mov r0, #0               @ Endereço sugerido (NULL = deixar kernel escolher)
+    mov r1, #4096            @ Tamanho mapeado: 1 página (4KB)
+    mov r2, #0x3             @ Proteção: PROT_READ | PROT_WRITE
+    mov r3, #0x1             @ Flags: MAP_SHARED
+
+    /* --- Argumentos adicionais para mmap2 --- */
+    ldr r5, #PIO_BASE        @ Endereço físico base da FPGA (PIO)
+    push {r5}                @ Offset físico (empilha)
+    mov r5, #0               @ Offset adicional
+    push {r5}
+
+    /* --- Chama mmap2 --- */
+    mov r7, #SYS_MMAP2       @ Syscall mmap2 (192)
+    svc #0
+
+    /* --- Limpa a pilha (remove 2 words) --- */
+    add sp, sp, #8
+
+    /* --- Verifica se o mapeamento foi bem-sucedido --- */
+    cmp r0, #-1              @ Verifica erro (MAP_FAILED)
+    beq mmap_fail
+
+    /* --- Armazena o endereço virtual mapeado --- */
+    ldr r1, =mmapped_address
+    str r0, [r1]
+
+    /* --- Aloca memória para as matrizes --- */
+    /* Aloca matriz A */
+    mov r7, #SYS_BRK
+    mov r0, #0               @ Consulta break atual
+    svc #0
+    ldr r1, =matrix_A_ptr
+    str r0, [r1]
+
+    /* Aloca matriz B */
+    svc #0                   @ Chama brk novamente
+    ldr r1, =matrix_B_ptr
+    str r0, [r1]
+
+    pop {r4-r7, pc}          @ Retorna
+
+
+/* Falha no mapeamento */
+mmap_fail:
+    /* --- Tratamento de erro --- */
+    ldr r1, =mmap_error
+    mov r2, #mmap_error_len
+    mov r7, #SYS_WRITE
+    svc #0
+
+    /* --- Sai com código de erro --- */
+    mov r7, #SYS_EXIT
+    mov r0, #1
+    svc #0
+
+/* Mostra menu principal */
+show_menu:
+    push {lr}
+    mov r7, #SYS_WRITE
+    mov r0, #STDOUT
+    ldr r1, =menu_msg
+    ldr r2, =menu_msg_len
+    svc #0
+    pop {pc}
+
+// FUNÇÕES AUXILIARES
+/* Lê entrada do usuário */
+read_input:
+    push {lr}
+    mov r7, #SYS_READ
+    mov r0, #STDIN
+    ldr r1, =input_buffer
+    mov r2, #2              @ Lê 2 bytes (1 char + newline)
+    svc #0
+    pop {pc}
