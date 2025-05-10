@@ -1,5 +1,6 @@
 # Ignora arquivos objeto gerados pela compilação
 *.o
+*.test.*
 
 # Ignora executáveis gerado pelo Makefile em ambiente Linux
 program

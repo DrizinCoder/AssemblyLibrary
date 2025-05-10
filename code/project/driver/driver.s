@@ -128,6 +128,9 @@ main_loop:
 operation_flow:
     /* Seleciona tamanho da matriz */
     bl select_matrix_size
+
+    /* Seleciona operação */
+    bl select_operation
         
     /* Volta ao menu */
     b main_loop
@@ -274,3 +277,42 @@ invalid_size:
     svc #0
     pop {pc}
 
+/* Seleciona operação */
+select_operation:
+    push {lr}
+    
+    /* Mostra menu de operações */
+    mov r7, #SYS_WRITE
+    mov r0, #STDOUT
+    ldr r1, =operation_menu
+    ldr r2, =operation_menu_len
+    svc #0
+    
+    /* Lê entrada */
+    bl read_input
+    
+    /* Converte para número e valida */
+    ldr r1, =input_buffer
+    ldrb r0, [r1]
+    sub r0, r0, #'0'        @ Converte ASCII para número
+    cmp r0, #0
+    blt invalid_op
+    cmp r0, #9
+    bgt invalid_op
+    
+    /* Armazena operação */
+    ldr r1, =current_op
+    add r0, r0, #2          @ Converte para código de operação (3=ADD, 4=SUB, 5=MUL)
+    strb r0, [r1]
+    
+    pop {pc}
+    
+invalid_op:
+    /* Operação inválida - pede novamente */
+    push {lr}
+    mov r7, #SYS_WRITE
+    mov r0, #STDOUT
+    ldr r1, =invalid_input
+    ldr r2, =invalid_input_len
+    svc #0
+    pop {pc}
