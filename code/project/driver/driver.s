@@ -131,6 +131,11 @@ operation_flow:
 
     /* Seleciona operação */
     bl select_operation
+
+    /* Preenche matrizes */
+    bl fill_matrix_A
+    bl fill_matrix_B
+    
         
     /* Volta ao menu */
     b main_loop
@@ -316,3 +321,52 @@ invalid_op:
     ldr r2, =invalid_input_len
     svc #0
     pop {pc}
+
+/* Preenche matriz A com valores */
+fill_matrix_A:
+    push {r4-r7, lr}
+    ldr r4, =matrix_A_ptr
+    ldr r4, [r4]
+    ldr r5, =size_matrix
+    ldrb r5, [r5]
+    mul r5, r5, r5          @ Calcula N²
+    
+    mov r6, #0              @ Contador
+fill_A_loop:
+    cmp r6, r5
+    bge fill_A_done
+    
+    /* Preenche com valores incrementais (1, 2, 3, ...) */
+    add r7, r6, #1          @ Valor = índice + 1
+    str r7, [r4, r6, lsl #2]
+    
+    add r6, r6, #1
+    b fill_A_loop
+
+fill_A_done:
+    pop {r4-r7, pc}
+
+/* Preenche matriz B com valores */
+fill_matrix_B:
+    push {r4-r7, lr}
+    ldr r4, =matrix_B_ptr
+    ldr r4, [r4]
+    ldr r5, =size_matrix
+    ldrb r5, [r5]
+    mul r5, r5, r5          @ Calcula N²
+    
+    mov r6, #0              @ Contador
+fill_B_loop:
+    cmp r6, r5
+    bge fill_B_done
+    
+    /* Preenche com valores decrementais partindo de N² */
+    mov r7, r5
+    sub r7, r7, r6          @ Valor = N² - índice
+    str r7, [r4, r6, lsl #2]
+    
+    add r6, r6, #1
+    b fill_B_loop
+
+fill_B_done:
+    pop {r4-r7, pc}
