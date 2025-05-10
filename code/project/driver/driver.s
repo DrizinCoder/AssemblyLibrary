@@ -135,7 +135,10 @@ operation_flow:
     /* Preenche matrizes */
     bl fill_matrix_A
     bl fill_matrix_B
-    
+
+    /* Envia matrizes para FPGA */
+    bl send_matrix_A
+    bl send_matrix_B
         
     /* Volta ao menu */
     b main_loop
@@ -370,3 +373,131 @@ fill_B_loop:
 
 fill_B_done:
     pop {r4-r7, pc}
+
+// FUNÇÕES DE COMUNICAÇÃO COM FPGA
+
+/* Envia matriz A para FPGA */
+send_matrix_A:
+    push {r4-r7, lr}
+    ldr r4, =matrix_A_ptr
+    ldr r4, [r4]
+    ldr r5, =size_matrix
+    ldrb r5, [r5]
+    mul r5, r5, r5          @ Calcula N²
+    
+    mov r6, #0              @ Contador
+send_A_loop:
+    cmp r6, r5
+    bge send_A_done
+    
+    /* Carrega 4 bytes */
+    ldr r7, [r4, r6, lsl #2]
+    
+    /* Escreve no PIO */
+    ldr r0, =IN_MATRIX
+    str r7, [r0]
+    
+    /* Sinaliza Write Valid */
+    ldr r0, =CTRL_HPS_FPGA
+    ldrb r1, [r0]
+    orr r1, r1, #WRITE_VALID_MASK
+    strb r1, [r0]
+    
+    /* Aguarda Write OK */
+wait_A_write_ok:
+    ldr r0, =CTRL_FPGA_HPS
+    ldrb r1, [r0]
+    tst r1, #WRITE_OK_MASK
+    beq wait_A_write_ok
+    
+    /* Limpa Write Valid */
+    ldr r0, =CTRL_HPS_FPGA
+    ldrb r1, [r0]
+    bic r1, r1, #WRITE_VALID_MASK
+    strb r1, [r0]
+    
+    add r6, r6, #1          @ Próxima word
+    b send_A_loop
+
+send_A_done:
+    /* Envia instrução LOAD_A */
+    mov r0, #LOAD_A
+    bl send_instruction
+    pop {r4-r7, pc}
+
+/* Envia matriz B para FPGA */
+send_matrix_B:
+    push {r4-r7, lr}
+    ldr r4, =matrix_B_ptr
+    ldr r4, [r4]
+    ldr r5, =size_matrix
+    ldrb r5, [r5]
+    mul r5, r5, r5          @ Calcula N²
+    
+    mov r6, #0              @ Contador
+send_B_loop:
+    cmp r6, r5
+    bge send_B_done
+    
+    /* Carrega 4 bytes */
+    ldr r7, [r4, r6, lsl #2]
+    
+    /* Escreve no PIO */
+    ldr r0, =IN_MATRIX
+    str r7, [r0]
+    
+    /* Sinaliza Write Valid */
+    ldr r0, =CTRL_HPS_FPGA
+    ldrb r1, [r0]
+    orr r1, r1, #WRITE_VALID_MASK
+    strb r1, [r0]
+    
+    /* Aguarda Write OK */
+wait_B_write_ok:
+    ldr r0, =CTRL_FPGA_HPS
+    ldrb r1, [r0]
+    tst r1, #WRITE_OK_MASK
+    beq wait_B_write_ok
+    
+    /* Limpa Write Valid */
+    ldr r0, =CTRL_HPS_FPGA
+    ldrb r1, [r0]
+    bic r1, r1, #WRITE_VALID_MASK
+    strb r1, [r0]
+    
+    add r6, r6, #1          @ Próxima word
+    b send_B_loop
+
+send_B_done:
+    /* Envia instrução LOAD_B */
+    mov r0, #LOAD_B
+    bl send_instruction
+    pop {r4-r7, pc}
+
+/* Envia instrução com handshake */
+send_instruction:
+    push {lr}
+    /* Escreve instrução */
+    ldr r1, =IN_INSTRUCTION
+    strb r0, [r1]
+    
+    /* Sinaliza Write Valid */
+    ldr r1, =CTRL_HPS_FPGA
+    ldrb r2, [r1]
+    orr r2, r2, #WRITE_VALID_MASK
+    strb r2, [r1]
+    
+    /* Aguarda Write OK */
+wait_instr_ok:
+    ldr r1, =CTRL_FPGA_HPS
+    ldrb r2, [r1]
+    tst r2, #WRITE_OK_MASK
+    beq wait_instr_ok
+    
+    /* Limpa Write Valid */
+    ldr r1, =CTRL_HPS_FPGA
+    ldrb r2, [r1]
+    bic r2, r2, #WRITE_VALID_MASK
+    strb r2, [r1]
+    
+    pop {pc}
