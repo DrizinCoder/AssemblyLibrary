@@ -194,7 +194,7 @@ init_memory:
     svc #0
 
     cmn r0, #1
-    beq fail_mmap
+    beq mmap_fail
 
     @ Verificação de funcionalidade  
     mov r1, #0x01            @ Valor para escrever nos leds
@@ -206,7 +206,7 @@ init_memory:
 open_fail:
     @  Tratamento de erro  
     ldr r1, =open_file_error
-    mov r2, #open_file_error
+    mov r2, #open_file_error_len
     mov r7, #SYS_WRITE
     svc #0
 
