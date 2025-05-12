@@ -1,5 +1,5 @@
-// DEFINIÇÕES DE ENDEREÇOS E CONSTANTES
-/* Endereços PIO (Parallel Input/Output) */
+@ DEFINIÇÕES DE ENDEREÇOS E CONSTANTES
+@ Endereços PIO (Parallel Input/Output) 
 .equ PIO_BASE,         0xFF200      @ Endereço base do PIO
 .equ IN_MATRIX,        0xFF200      @ Envio de matriz (4 bytes)
 .equ OUT_MATRIX,       0xFF204      @ Recebimento de matriz (4 bytes)
@@ -7,7 +7,7 @@
 .equ CTRL_FPGA_HPS,    0xFF209      @ Status FPGA->HPS (1 byte)
 .equ IN_INSTRUCTION,   0xFF20A      @ Envio de instruções (1 byte)
 
-/* Máscaras de bits para CTRL_HPS_FPGA (HPS → FPGA) */
+@ Máscaras de bits para CTRL_HPS_FPGA (HPS → FPGA) 
 .equ START_MASK,       0x01    @ Bit 0: Start operation (1 << 0)
 .equ OPCODE_BIT1,      0x02    @ Bit 1: Operation code bit 1 (1 << 1)
 .equ OPCODE_BIT2,      0x04    @ Bit 2: Operation code bit 2 (1 << 2)
@@ -15,13 +15,13 @@
 .equ WRITE_VALID_MASK, 0x10    @ Bit 4: Write Valid (1 << 4)
 .equ RESET_MASK,       0x20    @ Bit 5: Reset (1 << 5)  
 
-/* Máscaras de bits para CTRL_FPGA_HPS (FPGA → HPS) */
+@ Máscaras de bits para CTRL_FPGA_HPS (FPGA → HPS) 
 .equ OVERFLOW_MASK,    0x01    @ Bit 0: Overflow (1 << 0)
 .equ READ_VALID_MASK,  0x02    @ Bit 1: Read Valid (1 << 1)
 .equ WRITE_OK_MASK,    0x04    @ Bit 2: Write OK (1 << 2)
 .equ DONE_MASK,        0x08    @ Bit 3: Done (1 << 3)
 
-/* Códigos de instrução */
+@ Códigos de instrução 
 .equ LOAD_A2,          0x10
 .equ LOAD_B2,          0x50
 .equ LOAD_A3,          0x18
@@ -41,35 +41,35 @@
 .equ OP_DE4,           0x27            @ Determinante 4x4
 .equ OP_DE5,           0x2F            @ Determinante 5x5
 
-/* Tamanhos */
+@ Tamanhos 
 .equ MATRIX_SIZE_2x2,  4               @ 2x2 = 4 words (16 bytes)
 .equ MATRIX_SIZE_3x3,  9               @ 3x3 = 9 words (36 bytes)
 .equ MATRIX_SIZE_4x4,  16              @ 4x4 = 16 words (64 bytes)
 .equ MATRIX_SIZE_5x5,  25              @ 5x5 = 25 words (100 bytes)
 
-/* Syscalls */
+@ Syscalls 
 .equ SYS_EXIT,         1
 .equ SYS_READ,         3
 .equ SYS_WRITE,        4
 .equ SYS_OPEN,         5
-.equ SYS_MMAP2,        192
+.equ SYS_MMAP,         192
 .equ SYS_BRK,          45
 .equ STDIN,            0
 .equ STDOUT,           1
 
-// SEÇÃO DE DADOS
+@ SEÇÃO DE DADOS
 .section .data
-/* Variáveis para mapeamento de memória */
+@ Variáveis para mapeamento de memória 
 file_descriptor:    .word 0         @ Armazena o descritor de arquivo
 mmapped_address:    .word 0         @ Armazena o endereço mapeado
 dev_mem:            .asciz "/dev/mem"  @ Caminho do dispositivo de memória
 
-/* Buffers para matrizes */
+@ Buffers para matrizes 
 matrix_A_ptr:    .word 0               @ Ponteiro para matriz A
 matrix_B_ptr:    .word 0               @ Ponteiro para matriz B
 result_buffer:   .space 100            @ Buffer para resultado (suporta até 5x5)
 
-/* Mensagens */
+@ Mensagens 
 menu_msg:        .asciz "\nMenu:\n1. Operações\n0. Sair\nEscolha: "
 menu_msg_len = . - menu_msg
 
@@ -82,7 +82,10 @@ operation_menu_len = . - operation_menu
 invalid_input: .ascii "\nEntrada inválida. Por favor, tente novamente!\n"
 invalid_input_len = . - invalid_input
 
-mmap_error: .ascii "\nErro: Não foi possível abrir /dev/mem\n"
+open_file_error: .ascii "\nErro: Não foi possível abrir /dev/mem\n"
+open_file_error_len = . - open_file_error
+
+mmap_error: .ascii "\nErro: Não foi possível realizar mapeamento\n"
 mmap_error_len = . - mmap_error
 
 overflow_msg:    .asciz "\nAVISO: Overflow detectado!\n"
@@ -97,26 +100,27 @@ newline_len = . - newline
 space:           .asciz " "
 space_len = . - space
 
-/* Variáveis de estado */
+@ Variáveis de estado 
 size_matrix:     .byte 0
 current_op:      .byte 0
 
-/* Buffer de entrada */
+@ Buffer de entrada 
 input_buffer:    .space 2
 
-// CÓDIGO PRINCIPAL
+@ CÓDIGO PRINCIPAL
 .section .text
 .global _start
 
 _start:
     bl init_memory
+    bl alloc_memory
 
 main_loop:
-    /* Mostra menu principal */
+    @ Mostra menu principal 
     bl show_menu
     bl read_input
     
-    /* Processa escolha */
+    @ Processa escolha 
     ldr r1, =input_buffer
     ldrb r0, [r1]
     cmp r0, #'1'
@@ -126,115 +130,121 @@ main_loop:
     b main_loop
 
 operation_flow:
-    /* Seleciona tamanho da matriz */
+    @ Seleciona tamanho da matriz 
     bl select_matrix_size
 
-    /* Seleciona operação */
+    @ Seleciona operação 
     bl select_operation
 
-    /* Preenche matrizes */
+    @ Preenche matrizes 
     bl fill_matrix_A
     bl fill_matrix_B
 
-    /* Envia matrizes para FPGA */
+    @ Envia matrizes para FPGA 
     bl send_matrix_A
     bl send_matrix_B
 
-    /* Executa operação */
+    @ Executa operação 
     bl execute_operation
 
-    /* Recebe resultado */
+    @ Recebe resultado 
     bl receive_result
     
-    /* Mostra resultado */
+    @ Mostra resultado 
     bl print_result
         
-    /* Volta ao menu */
+    @ Volta ao menu 
     b main_loop
 
 exit_program:
-    /* Sai do programa */
+    @ Sai do programa 
     mov r7, #SYS_EXIT
     mov r0, #0
     svc #0
 
-// FUNÇÕES PRINCIPAIS
-/* Inicialização */
+@ FUNÇÕES PRINCIPAIS
+@ Inicialização 
 init_memory:
-    push {r4-r7, lr}
+    push {r1-r7, lr}
 
-    /* --- Abre /dev/mem para acesso à memória física --- */
-    ldr r0, =dev_mem         @ Carrega endereço da string "/dev/mem"
-    mov r1, #2              
-    mov r7, #SYS_OPEN        @ Syscall open()
+    @  Abre /dev/mem 
+    ldr r0, =dev_mem
+    mov r1, #2     
+    mov r2, #0              
+    mov r7, #5              
     svc #0
 
-    /* --- Verifica se o arquivo foi aberto corretamente --- */
+    @ verifica se houve erro 
     cmp r0, #0
-    blt mmap_fail            @ Se retorno < 0, houve erro
+    blt open_fail
 
-    /* --- Armazena o file descriptor --- */
+    @  Salva file descriptor 
     ldr r1, =file_descriptor
     str r0, [r1]
 
-    /* --- Configuração do mmap2 --- */
-    mov r4, r0               @ Preserva file descriptor em r4
-    mov r0, #0               @ Endereço sugerido (NULL = deixar kernel escolher)
-    mov r1, #4096            @ Tamanho mapeado: 1 página (4KB)
-    mov r2, #0x3             @ Proteção: PROT_READ | PROT_WRITE
-    mov r3, #0x1             @ Flags: MAP_SHARED
-
-    /* --- Argumentos adicionais para mmap2 --- */
-    ldr r5, =PIO_BASE        @ Endereço físico base da FPGA (PIO)
-    push {r5}                @ Offset físico (empilha)
-    mov r5, #0               @ Offset adicional
-    push {r5}
-
-    /* --- Chama mmap2 --- */
-    mov r7, #SYS_MMAP2       @ Syscall mmap2 (192)
+    @ Mapeia memória
+    mov r0, #0              @ Endereço NULL (deixa kernel escolher)
+    ldr r1, =0x1000         
+    mov r2, #3              
+    mov r3, #1              
+    ldr r4, =file_descriptor
+    ldr r4, [r4]            
+    ldr r5, =0xFF200        @ Offset físico (ajuste conforme seu hardware)
+    mov r7, #SYS_MMAP       @ mmap
     svc #0
 
-    /* --- Limpa a pilha (remove 2 words) --- */
-    add sp, sp, #8
+    cmn r0, #1
+    beq fail_mmap
 
-    /* --- Verifica se o mapeamento foi bem-sucedido --- */
-    cmp r0, #-1              @ Verifica erro (MAP_FAILED)
-    beq mmap_fail
+    @ Verificação de funcionalidade  
+    mov r1, #0x01            @ Valor para escrever nos leds
+    str r1, [r0, #0x20]      @ Escreve no endereço mapeado
 
-    /* --- Armazena o endereço virtual mapeado --- */
-    ldr r1, =mmapped_address
-    str r0, [r1]
+    pop {r1-r7, pc}          
 
-    /* --- Aloca memória para as matrizes --- */
-    /* Aloca matriz A */
+@ Falha em abrir arquivo
+open_fail:
+    @  Tratamento de erro  
+    ldr r1, =open_file_error
+    mov r2, #open_file_error
+    mov r7, #SYS_WRITE
+    svc #0
+
+    @  Sai com código de erro  
+    mov r7, #SYS_EXIT
+    mov r0, #1
+    svc #0
+
+@ Falha no mapeamento 
+mmap_fail:
+    @  Tratamento de erro  
+    ldr r1, =mmap_error
+    mov r2, #mmap_error_len
+    mov r7, #SYS_WRITE
+    svc #0
+
+    @  Sai com código de erro  
+    mov r7, #SYS_EXIT
+    mov r0, #1
+    svc #0
+
+alloc_memory:
+    @  Aloca memória para as matrizes  
+
+    @ Aloca matriz A 
     mov r7, #SYS_BRK
     mov r0, #0               @ Consulta break atual
     svc #0
     ldr r1, =matrix_A_ptr
     str r0, [r1]
 
-    /* Aloca matriz B */
+    @ Aloca matriz B 
     svc #0                   @ Chama brk novamente
     ldr r1, =matrix_B_ptr
     str r0, [r1]
 
-    pop {r4-r7, pc}          @ Retorna
 
-
-/* Falha no mapeamento */
-mmap_fail:
-    /* --- Tratamento de erro --- */
-    ldr r1, =mmap_error
-    mov r2, #mmap_error_len
-    mov r7, #SYS_WRITE
-    svc #0
-
-    /* --- Sai com código de erro --- */
-    mov r7, #SYS_EXIT
-    mov r0, #1
-    svc #0
-
-/* Mostra menu principal */
+@ Mostra menu principal 
 show_menu:
     push {lr}
     mov r7, #SYS_WRITE
@@ -244,32 +254,22 @@ show_menu:
     svc #0
     pop {pc}
 
-// FUNÇÕES AUXILIARES
-/* Lê entrada do usuário */
-read_input:
-    push {lr}
-    mov r7, #SYS_READ
-    mov r0, #STDIN
-    ldr r1, =input_buffer
-    mov r2, #2              @ Lê 2 bytes (1 char + newline)
-    svc #0
-    pop {pc}
-
-/* Seleciona tamanho da matriz */
+@ FUNÇÕES AUXILIARES
+@ Seleciona tamanho da matriz 
 select_matrix_size:
     push {lr}
     
-    /* Mostra prompt */
+    @ Mostra prompt 
     mov r7, #SYS_WRITE
     mov r0, #STDOUT
     ldr r1, =size_prompt
     ldr r2, =size_prompt_len
     svc #0
     
-    /* Lê entrada */
+    @ Lê entrada 
     bl read_input
     
-    /* Converte para número e valida */
+    @ Converte para número e valida 
     ldr r1, =input_buffer
     ldrb r0, [r1]
     sub r0, r0, #'0'        @ Converte ASCII para número
@@ -278,14 +278,14 @@ select_matrix_size:
     cmp r0, #5
     bgt invalid_size
     
-    /* Armazena tamanho */
+    @ Armazena tamanho 
     ldr r1, =size_matrix
     strb r0, [r1]
     
     pop {pc}
     
 invalid_size:
-    /* Tamanho inválido - pede novamente */
+    @ Tamanho inválido - pede novamente 
     push {lr}
     mov r7, #SYS_WRITE
     mov r0, #STDOUT
@@ -294,21 +294,21 @@ invalid_size:
     svc #0
     pop {pc}
 
-/* Seleciona operação */
+@ Seleciona operação 
 select_operation:
     push {lr}
     
-    /* Mostra menu de operações */
+    @ Mostra menu de operações 
     mov r7, #SYS_WRITE
     mov r0, #STDOUT
     ldr r1, =operation_menu
     ldr r2, =operation_menu_len
     svc #0
     
-    /* Lê entrada */
+    @ Lê entrada 
     bl read_input
     
-    /* Converte para número e valida */
+    @ Converte para número e valida 
     ldr r1, =input_buffer
     ldrb r0, [r1]
     sub r0, r0, #'0'        @ Converte ASCII para número
@@ -317,7 +317,7 @@ select_operation:
     cmp r0, #9
     bgt invalid_op
     
-    /* Armazena operação */
+    @ Armazena operação 
     ldr r1, =current_op
     add r0, r0, #2          @ Converte para código de operação (3=ADD, 4=SUB, 5=MUL)
     strb r0, [r1]
@@ -325,7 +325,7 @@ select_operation:
     pop {pc}
     
 invalid_op:
-    /* Operação inválida - pede novamente */
+    @ Operação inválida - pede novamente 
     push {lr}
     mov r7, #SYS_WRITE
     mov r0, #STDOUT
@@ -334,21 +334,21 @@ invalid_op:
     svc #0
     pop {pc}
 
-/* Preenche matriz A com valores */
+@ Preenche matriz A com valores 
 fill_matrix_A:
-    push {r4-r7, lr}
+    push {r1-r7, lr}
     ldr r4, =matrix_A_ptr
-    ldr r4, [r4]
     ldr r5, =size_matrix
     ldrb r5, [r5]
-    mul r5, r5, r5          @ Calcula N²
+    mov r9, r5
+    mul r5, r9, r9          @ Calcula N²
     
     mov r6, #0              @ Contador
 fill_A_loop:
     cmp r6, r5
     bge fill_A_done
     
-    /* Preenche com valores incrementais (1, 2, 3, ...) */
+    @ Preenche com valores incrementais (1, 2, 3, ...) 
     add r7, r6, #1          @ Valor = índice + 1
     str r7, [r4, r6, lsl #2]
     
@@ -356,23 +356,22 @@ fill_A_loop:
     b fill_A_loop
 
 fill_A_done:
-    pop {r4-r7, pc}
+    pop {r1-r7, pc}
 
-/* Preenche matriz B com valores */
+@ Preenche matriz B com valores 
 fill_matrix_B:
-    push {r4-r7, lr}
+    push {r1-r7, lr}
     ldr r4, =matrix_B_ptr
-    ldr r4, [r4]
     ldr r5, =size_matrix
-    ldrb r5, [r5]
-    mul r5, r5, r5          @ Calcula N²
+    mov r9, r5
+    mul r5, r9, r9          @ Calcula N²
     
     mov r6, #0              @ Contador
 fill_B_loop:
     cmp r6, r5
     bge fill_B_done
     
-    /* Preenche com valores decrementais partindo de N² */
+    @ Preenche com valores decrementais partindo de N² 
     mov r7, r5
     sub r7, r7, r6          @ Valor = N² - índice
     str r7, [r4, r6, lsl #2]
@@ -381,45 +380,45 @@ fill_B_loop:
     b fill_B_loop
 
 fill_B_done:
-    pop {r4-r7, pc}
+    pop {r1-r7, pc}
 
-// FUNÇÕES DE COMUNICAÇÃO COM FPGA
+@ FUNÇÕES DE COMUNICAÇÃO COM FPGA
 
-/* Envia matriz A para FPGA */
+@ Envia matriz A para FPGA 
 send_matrix_A:
-    push {r4-r7, lr}
+    push {r1-r7, lr}
     ldr r4, =matrix_A_ptr
-    ldr r4, [r4]
     ldr r5, =size_matrix
     ldrb r5, [r5]
-    mul r5, r5, r5          @ Calcula N²
+    mov r9, r5
+    mul r5, r9, r9          @ Calcula N²
     
     mov r6, #0              @ Contador
 send_A_loop:
     cmp r6, r5
     bge send_A_done
     
-    /* Carrega 4 bytes */
+    @ Carrega 4 bytes 
     ldr r7, [r4, r6, lsl #2]
     
-    /* Escreve no PIO */
+    @ Escreve no PIO 
     ldr r0, =IN_MATRIX
     str r7, [r0]
     
-    /* Sinaliza Write Valid */
+    @ Sinaliza Write Valid 
     ldr r0, =CTRL_HPS_FPGA
     ldrb r1, [r0]
     orr r1, r1, #WRITE_VALID_MASK
     strb r1, [r0]
     
-    /* Aguarda Write OK */
+    @ Aguarda Write OK 
 wait_A_write_ok:
     ldr r0, =CTRL_FPGA_HPS
     ldrb r1, [r0]
     tst r1, #WRITE_OK_MASK
     beq wait_A_write_ok
     
-    /* Limpa Write Valid */
+    @ Limpa Write Valid 
     ldr r0, =CTRL_HPS_FPGA
     ldrb r1, [r0]
     bic r1, r1, #WRITE_VALID_MASK
@@ -429,46 +428,57 @@ wait_A_write_ok:
     b send_A_loop
 
 send_A_done:
-    /* Envia instrução LOAD_A */
-    mov r0, #LOAD_A
-    bl send_instruction
-    pop {r4-r7, pc}
+    @ Envia instrução LOAD_A 
+    ldr r1, =size_matrix
+    ldrb r1, [r1]
 
-/* Envia matriz B para FPGA */
+    cmp r1, #2
+    moveq r0, #LOAD_A2
+    cmp r1, #3
+    moveq r0, #LOAD_A3
+    cmp r1, #4
+    moveq r0, #LOAD_A4
+    cmp r1, #5
+    moveq r0, #LOAD_A5
+
+    bl send_instruction
+    pop {r1-r7, pc}
+
+@ Envia matriz B para FPGA 
 send_matrix_B:
-    push {r4-r7, lr}
+    push {r1-r7, lr}
     ldr r4, =matrix_B_ptr
-    ldr r4, [r4]
     ldr r5, =size_matrix
     ldrb r5, [r5]
-    mul r5, r5, r5          @ Calcula N²
+    mov r9, r5
+    mul r5, r9, r9          @ Calcula N²
     
     mov r6, #0              @ Contador
 send_B_loop:
     cmp r6, r5
     bge send_B_done
     
-    /* Carrega 4 bytes */
+    @ Carrega 4 bytes 
     ldr r7, [r4, r6, lsl #2]
     
-    /* Escreve no PIO */
+    @ Escreve no PIO 
     ldr r0, =IN_MATRIX
     str r7, [r0]
     
-    /* Sinaliza Write Valid */
+    @ Sinaliza Write Valid 
     ldr r0, =CTRL_HPS_FPGA
     ldrb r1, [r0]
     orr r1, r1, #WRITE_VALID_MASK
     strb r1, [r0]
     
-    /* Aguarda Write OK */
+    @ Aguarda Write OK 
 wait_B_write_ok:
     ldr r0, =CTRL_FPGA_HPS
     ldrb r1, [r0]
     tst r1, #WRITE_OK_MASK
     beq wait_B_write_ok
     
-    /* Limpa Write Valid */
+    @ Limpa Write Valid 
     ldr r0, =CTRL_HPS_FPGA
     ldrb r1, [r0]
     bic r1, r1, #WRITE_VALID_MASK
@@ -478,32 +488,43 @@ wait_B_write_ok:
     b send_B_loop
 
 send_B_done:
-    /* Envia instrução LOAD_B */
-    mov r0, #LOAD_B
-    bl send_instruction
-    pop {r4-r7, pc}
+    @ Envia instrução LOAD_B 
+    ldr r1, =size_matrix
+    ldrb r1, [r1]
 
-/* Envia instrução com handshake */
+    cmp r1, #2
+    moveq r0, #LOAD_B2
+    cmp r1, #3
+    moveq r0, #LOAD_B3
+    cmp r1, #4
+    moveq r0, #LOAD_B4
+    cmp r1, #5
+    moveq r0, #LOAD_B5
+    
+    bl send_instruction
+    pop {r1-r7, pc}
+
+@ Envia instrução com handshake 
 send_instruction:
     push {lr}
-    /* Escreve instrução */
+    @ Escreve instrução 
     ldr r1, =IN_INSTRUCTION
     strb r0, [r1]
     
-    /* Sinaliza Write Valid */
+    @ Sinaliza Write Valid 
     ldr r1, =CTRL_HPS_FPGA
     ldrb r2, [r1]
     orr r2, r2, #WRITE_VALID_MASK
     strb r2, [r1]
     
-    /* Aguarda Write OK */
+    @ Aguarda Write OK 
 wait_instr_ok:
     ldr r1, =CTRL_FPGA_HPS
     ldrb r2, [r1]
     tst r2, #WRITE_OK_MASK
     beq wait_instr_ok
     
-    /* Limpa Write Valid */
+    @ Limpa Write Valid 
     ldr r1, =CTRL_HPS_FPGA
     ldrb r2, [r1]
     bic r2, r2, #WRITE_VALID_MASK
@@ -511,40 +532,41 @@ wait_instr_ok:
     
     pop {pc}
 
-/* Executa operação na FPGA */
+@ Executa operação na FPGA 
 execute_operation:
     push {lr}
-    /* Envia código da operação */
+    @ Envia código da operação 
     ldr r0, =current_op
     ldrb r0, [r0]
     bl send_instruction
     
-    /* Sinaliza START */
+    @ Sinaliza START 
     ldr r0, =CTRL_HPS_FPGA
     mov r1, #START_MASK
     strb r1, [r0]
     
-    /* Aguarda DONE */
+    @ Aguarda DONE 
 wait_operation_done:
     ldr r0, =CTRL_FPGA_HPS
     ldrb r1, [r0]
     tst r1, #DONE_MASK
     beq wait_operation_done
     
-    /* Limpa START */
+    @ Limpa START 
     ldr r0, =CTRL_HPS_FPGA
     mov r1, #0
     strb r1, [r0]
     
     pop {pc}
 
-/* Recebe resultado da FPGA */
+@ Recebe resultado da FPGA 
 receive_result:
     push {r4-r7, lr}
     ldr r4, =OUT_MATRIX
     ldr r5, =size_matrix
     ldrb r5, [r5]
-    mul r5, r5, r5          @ Calcula N²
+    mov r9, r5
+    mul r5, r9, r9          @ Calcula N²
     ldr r6, =result_buffer
     
     mov r7, #0              @ Contador
@@ -552,24 +574,24 @@ receive_loop:
     cmp r7, r5
     bge receive_done
     
-    /* Sinaliza Read Request */
+    @ Sinaliza Read Request 
     ldr r0, =CTRL_HPS_FPGA
     ldrb r1, [r0]
     orr r1, r1, #READ_REQ_MASK
     strb r1, [r0]
     
-    /* Aguarda Read Valid */
+    @ Aguarda Read Valid 
 wait_read_valid:
     ldr r0, =CTRL_FPGA_HPS
     ldrb r1, [r0]
     tst r1, #READ_VALID_MASK
     beq wait_read_valid
     
-    /* Lê 4 bytes */
+    @ Lê 4 bytes 
     ldr r0, [r4]
     str r0, [r6, r7, lsl #2]
     
-    /* Limpa Read Request */
+    @ Limpa Read Request 
     ldr r0, =CTRL_HPS_FPGA
     ldrb r1, [r0]
     bic r1, r1, #READ_REQ_MASK
@@ -579,13 +601,13 @@ wait_read_valid:
     b receive_loop
 
 receive_done:
-    /* Verifica overflow */
+    @ Verifica overflow 
     ldr r0, =CTRL_FPGA_HPS
     ldrb r1, [r0]
     tst r1, #OVERFLOW_MASK
     beq no_overflow
     
-    /* Mostra mensagem de overflow */
+    @ Mostra mensagem de overflow 
     mov r7, #SYS_WRITE
     mov r0, #STDOUT
     ldr r1, =overflow_msg
@@ -596,8 +618,8 @@ no_overflow:
     pop {r4-r7, pc}
 
 
- // FUNÇÕES AUXILIARES
-/* Lê entrada do usuário */
+@ FUNÇÕES AUXILIARES
+@ Lê entrada do usuário 
 read_input:
     push {lr}
     mov r7, #SYS_READ
@@ -607,14 +629,14 @@ read_input:
     svc #0
     pop {pc}
 
-/* Imprime resultado */
+@ Imprime resultado 
 print_result:
     push {r4-r8, lr}
     ldr r4, =result_buffer
     ldr r5, =size_matrix
     ldrb r5, [r5]           @ Tamanho da matriz (N)
     
-    /* Imprime cabeçalho */
+    @ Imprime cabeçalho 
     mov r7, #SYS_WRITE
     mov r0, #STDOUT
     ldr r1, =result_msg
@@ -632,24 +654,24 @@ print_col_loop:
     cmp r8, r5
     bge print_row_end
     
-    /* Calcula índice: (linha * N) + coluna */
+    @ Calcula índice: (linha * N) + coluna 
     mul r0, r6, r5
     add r0, r0, r8
     ldr r1, [r4, r0, lsl #2] @ Carrega valor
     
-    /* Converte número para string */
+    @ Converte número para string 
     sub sp, sp, #12         @ Reserva espaço na pilha
     mov r2, sp
     bl int_to_string
     
-    /* Imprime número */
+    @ Imprime número 
     mov r7, #SYS_WRITE
     mov r0, #STDOUT
     mov r1, sp
     mov r2, #11             @ Tamanho máximo de um inteiro
     svc #0
     
-    /* Imprime espaço */
+    @ Imprime espaço 
     mov r7, #SYS_WRITE
     mov r0, #STDOUT
     ldr r1, =space
@@ -661,7 +683,7 @@ print_col_loop:
     b print_col_loop
 
 print_row_end:
-    /* Imprime newline */
+    @ Imprime newline 
     mov r7, #SYS_WRITE
     mov r0, #STDOUT
     ldr r1, =newline
@@ -674,13 +696,13 @@ print_row_end:
 print_done:
     pop {r4-r8, pc}
 
-/* Converte inteiro para string (simplificado) */
+@ Converte inteiro para string (simplificado) 
 int_to_string:
     push {r4-r5, lr}
     mov r4, r1              @ Buffer de saída
     mov r5, #10             @ Divisor
     
-    /* Verifica se é zero */
+    @ Verifica se é zero 
     cmp r0, #0
     bne not_zero
     mov r1, #'0'
@@ -690,7 +712,7 @@ int_to_string:
     b conversion_done
     
 not_zero:
-    /* Converte dígitos */
+    @ Converte dígitos 
     mov r1, #0              @ Contador de dígitos
 convert_loop:
     cmp r0, #0
@@ -701,7 +723,7 @@ convert_loop:
     sub r3, r0, r3          @ Resto
     add r3, r3, #'0'        @ Converte para ASCII
     
-    /* Armazena dígito na pilha */
+    @ Armazena dígito na pilha 
     push {r3}
     add r1, r1, #1
     mov r0, r2
@@ -720,7 +742,7 @@ reverse_loop:
     b reverse_loop
     
 conversion_done:
-    /* Adiciona terminador nulo */
+    @ Adiciona terminador nulo 
     mov r3, #0
     strb r3, [r4, r2]
     pop {r4-r5, pc}
