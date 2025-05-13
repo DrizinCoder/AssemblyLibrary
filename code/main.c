@@ -1,0 +1,240 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <stdint.h>
+
+#define OPCODE_LOAD 0
+#define OPCODE_ADD 1
+#define OPCODE_STORE 7
+
+#define FPGA_BASE_ADDR 0xFF200
+#define PAGE_SIZE 4096
+#define MAP_MASK (PAGE_SIZE - 1)
+
+void load_control_signals();
+void store_control_signals();
+void send_instruction(volatile uint32_t *fpga_register, int num1, int num2, int num3, int mat_target, int mat_size, int opcode);
+void start_signal(volatile uint32_t *fpga_register);
+void wait_for_done(volatile uint32_t *fpga_register);
+int load_matrix(volatile uint32_t *fpga_register, int *matrix, int size, int mat_target);
+int store_matrix(volatile uint32_t *fpga_register, int *matrix, int size);
+void read_matrix(int *matrix, int size, const char *name);
+void print_matrix(int *matrix, int size, const char *name);
+int memory_mman(int *fd, volatile uint32_t **fpga_register, void **map_base, void **virt_addr);
+
+// Código Principal
+
+int main()
+{
+  int fd;
+  volatile uint32_t *fpga_register;
+  void *map_base, *virt_addr;
+
+  if (memory_mman(&fd, &fpga_register, &map_base, &virt_addr) != 0)
+  {
+    fprintf(stderr, "Falha ao mapear memória\n");
+    return -1;
+  }
+
+  int start = 1;
+  while (start)
+  {
+    printf("1 - Operação\n0 - Sair\nDigite: ");
+    scanf("%d", &start);
+
+    if (!start)
+      break;
+
+    int size = 0;
+    int operation = 0;
+
+    printf("Digite o tamanho da matriz: ");
+    scanf("%d", &size);
+
+    int *matrixA = (int *)calloc(size * size, sizeof(int));
+    int *matrixB = (int *)calloc(size * size, sizeof(int));
+    int *matrixR = (int *)calloc(size * size, sizeof(int));
+
+    read_matrix(matrixA, size, "A");
+    read_matrix(matrixB, size, "B");
+
+    printf("\nCarregando matriz A na FPGA...\n");
+    load_matrix(fpga_register, matrixA, size, 0);
+
+    printf("\nCarregando matriz B na FPGA...\n");
+    load_matrix(fpga_register, matrixB, size, 1);
+
+    printf("\nEnviando operação de soma...\n");
+    send_instruction(fpga_register, 0, 0, 0, 0, 0, OPCODE_ADD);
+    start_signal(fpga_register);
+    wait_for_done(fpga_register);
+
+    printf("\nRecebendo resultado da FPGA...\n");
+    store_matrix(fpga_register, matrixR, size);
+
+    printf("\nResultado da operação:\n");
+    print_matrix(matrixR, size, "Resultado");
+
+    free(matrixA);
+    free(matrixB);
+    free(matrixR);
+
+    munmap(map_base, PAGE_SIZE);
+    close(fd);
+  }
+
+  return 0;
+}
+
+// Funções de comunicação com a FPGA
+
+// Observa sinais da FPGA
+void load_control_signals(volatile uint32_t *fpga_register)
+{
+}
+
+// Envia sinais para FPGA
+void store_control_signals(volatile uint32_t *fpga_register)
+{
+}
+
+void send_instruction(volatile uint32_t *fpga_register, int num1, int num2, int num3, int mat_target, int mat_size, int opcode)
+{
+  // Aqui seria implementado o envio real para a FPGA
+  // Por enquanto, apenas imprimimos a instrução
+  printf("Enviando instrução: \n");
+  printf("num1: %d\n", num1);
+  printf("num2: %d\n", num2);
+  printf("num3: %d\n", num3);
+  printf("mat_target: %d\n", mat_target);
+  printf("mat_size: %d\n", mat_size);
+  printf("opcode: %04b\n\n", opcode);
+}
+
+void start_signal(volatile uint32_t *fpga_register)
+{
+  // Envia sinal de start para a FPGA
+  printf("Enviando sinal START\n");
+}
+
+void wait_for_done(volatile uint32_t *fpga_register)
+{
+  printf("Esperando por sinal DONE...\n");
+  for (int i = 0; i < 3; i++)
+  {
+    printf("Esperando");
+  }
+  printf("\nDONE recebido!\n\n");
+}
+
+// Funções auxiliares
+
+int load_matrix(volatile uint32_t *fpga_register, int *matrix, int size, int mat_target)
+{
+  int elements = size * size;
+  int sent = 0;
+
+  while (sent < elements)
+  {
+    int num1 = 0, num2 = 0, num3 = 0;
+
+    // Preenche os 3 valores (ou menos se for o último envio)
+    if (sent < elements)
+      num1 = matrix[sent++];
+    if (sent < elements)
+      num2 = matrix[sent++];
+    if (sent < elements)
+      num3 = matrix[sent++];
+
+    // Envia a instrução LOAD
+    send_instruction(fpga_register, num1, num2, num3, mat_target, size, OPCODE_LOAD);
+    start_signal(fpga_register);
+    wait_for_done(fpga_register);
+  }
+
+  return 0;
+}
+
+int store_matrix(volatile uint32_t *fpga_register, int *matrix, int size)
+{
+  int elements = size * size;
+  int received = 0;
+  int store_count = (elements + 3) / 4; // Calcula quantos STOREs são necessários
+
+  for (int i = 0; i < store_count; i++)
+  {
+    send_instruction(fpga_register, 0, 0, 0, 0, size, OPCODE_STORE);
+    start_signal(fpga_register);
+    wait_for_done(fpga_register);
+
+    // Aqui seria implementada a recepção dos 4 valores da FPGA
+    // Por enquanto, simulamos a recepção
+    printf("Recebendo 4 valores da FPGA...\n");
+    // Simulando valores recebidos (substituir pela leitura real)
+    int val1 = 0, val2 = 0, val3 = 0, val4 = 0;
+
+    // Armazena os valores recebidos na matriz
+    if (received < elements)
+      matrix[received++] = val1;
+    if (received < elements)
+      matrix[received++] = val2;
+    if (received < elements)
+      matrix[received++] = val3;
+    if (received < elements)
+      matrix[received++] = val4;
+  }
+
+  return 0;
+}
+
+void read_matrix(int *matrix, int size, const char *name)
+{
+  printf("Digite os valores da matriz %s (%dx%d):\n", name, size, size);
+  for (int i = 0; i < size * size; i++)
+  {
+    printf("%s[%d][%d]: ", name, i / size, i % size);
+    scanf("%d", &matrix[i]);
+  }
+}
+
+void print_matrix(int *matrix, int size, const char *name)
+{
+  printf("Matriz %s:\n", name);
+  for (int i = 0; i < size; i++)
+  {
+    for (int j = 0; j < size; j++)
+    {
+      printf("%4d", matrix[i * size + j]);
+    }
+    printf("\n");
+  }
+}
+
+// Mapeamento de memória
+
+int memory_mman(int *fd, volatile uint32_t **fpga_register, void **map_base, void **virt_addr)
+{
+  // Abrir /dev/mem para acessar memória física
+  if ((*fd = open("/dev/mem", O_RDWR | O_SYNC)) == -1)
+  {
+    perror("Erro ao abrir /dev/mem");
+    return -1;
+  }
+
+  // Mapear a página de memória que contém o registrador
+  *map_base = mmap(0, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, *fd, FPGA_BASE_ADDR & ~MAP_MASK);
+  if (*map_base == (void *)-1)
+  {
+    perror("Erro no mapeamento");
+    close(*fd);
+    return -1;
+  }
+
+  // Calcular o endereço virtual do registrador
+  *virt_addr = *map_base + (FPGA_BASE_ADDR & MAP_MASK);
+  *fpga_register = (volatile uint32_t *)*virt_addr;
+
+  return 0;
+}
