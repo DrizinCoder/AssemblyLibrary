@@ -6,15 +6,17 @@
 #include <stdint.h>
 
 #define OPCODE_LOAD 0
-#define OPCODE_ADD 1
 #define OPCODE_STORE 7
+
+#define OPCODE_ADD 1
+#define OPCODE_SUB 2
 
 #define FPGA_BASE_ADDR 0xFF200
 #define PAGE_SIZE 4096
 #define MAP_MASK (PAGE_SIZE - 1)
 
-void load_control_signals();
-void store_control_signals();
+int load_control_signals(volatile uint32_t *fpga_register);
+void store_control_signals(volatile uint32_t *fpga_register);
 void send_instruction(volatile uint32_t *fpga_register, int num1, int num2, int num3, int mat_target, int mat_size, int opcode);
 void start_signal(volatile uint32_t *fpga_register);
 void wait_for_done(volatile uint32_t *fpga_register);
@@ -53,6 +55,9 @@ int main()
     printf("Digite o tamanho da matriz: ");
     scanf("%d", &size);
 
+    printf("Digite a operação: ");
+    scanf("%d", &operation);
+
     int *matrixA = (int *)calloc(size * size, sizeof(int));
     int *matrixB = (int *)calloc(size * size, sizeof(int));
     int *matrixR = (int *)calloc(size * size, sizeof(int));
@@ -66,10 +71,19 @@ int main()
     printf("\nCarregando matriz B na FPGA...\n");
     load_matrix(fpga_register, matrixB, size, 1);
 
-    printf("\nEnviando operação de soma...\n");
-    send_instruction(fpga_register, 0, 0, 0, 0, 0, OPCODE_ADD);
-    start_signal(fpga_register);
-    wait_for_done(fpga_register);
+    printf("\nEnviando operação...\n");
+    if (operation == 1)
+    {
+      send_instruction(fpga_register, 0, 0, 0, 0, 0, OPCODE_ADD);
+      start_signal(fpga_register);
+      wait_for_done(fpga_register);
+    }
+    else
+    {
+      send_instruction(fpga_register, 0, 0, 0, 0, 0, OPCODE_SUB);
+      start_signal(fpga_register);
+      wait_for_done(fpga_register);
+    }
 
     printf("\nRecebendo resultado da FPGA...\n");
     store_matrix(fpga_register, matrixR, size);
@@ -91,40 +105,52 @@ int main()
 // Funções de comunicação com a FPGA
 
 // Observa sinais da FPGA
-void load_control_signals(volatile uint32_t *fpga_register)
+int load_control_signals(volatile uint32_t *fpga_register)
 {
+  volatile uint32_t *control_signals_addr = fpga_register + (0x40 / sizeof(uint32_t));
+  uint32_t control_signals = *control_signals_addr;
+  return (control_signals & 0x01);
 }
 
 // Envia sinais para FPGA
 void store_control_signals(volatile uint32_t *fpga_register)
 {
+  volatile uint32_t *control_signals_addr = fpga_register + (0x20 / sizeof(uint32_t));
+  *control_signals_addr = 0x01;
 }
 
 void send_instruction(volatile uint32_t *fpga_register, int num1, int num2, int num3, int mat_target, int mat_size, int opcode)
 {
-  // Aqui seria implementado o envio real para a FPGA
-  // Por enquanto, apenas imprimimos a instrução
-  printf("Enviando instrução: \n");
-  printf("num1: %d\n", num1);
-  printf("num2: %d\n", num2);
-  printf("num3: %d\n", num3);
-  printf("mat_target: %d\n", mat_target);
-  printf("mat_size: %d\n", mat_size);
-  printf("opcode: %04b\n\n", opcode);
+  volatile uint32_t *instruction_register = fpga_register + (0x60 / sizeof(uint32_t));
+
+  uint32_t instruction = 0;
+
+  instruction |= (opcode & 0xF);          // Opcode: bits 0-3 (4 bits)
+  instruction |= (mat_size & 0x3) << 4;   // Mat. Size: bits 4-5 (2 bits)
+  instruction |= (mat_target & 0x1) << 6; // Mat Target: bit 6 (1 bit)
+  instruction |= (num1 & 0xFF) << 7;      // num1: bits 7-14 (8 bits)
+  instruction |= (num2 & 0xFF) << 15;     // num2: bits 15-22 (8 bits)
+  instruction |= (num3 & 0xFF) << 23;     // num3: bits 23-30 (8 bits)
+
+  // Garante que o bit 31 fique zerado
+  instruction &= 0x7FFFFFFF;
+
+  *instruction_register = instruction;
+
+  printf("Instrução de 32 bits montada e enviada: 0x%08X\n", instruction);
 }
 
 void start_signal(volatile uint32_t *fpga_register)
 {
-  // Envia sinal de start para a FPGA
   printf("Enviando sinal START\n");
+  store_control_signals(fpga_register);
 }
 
 void wait_for_done(volatile uint32_t *fpga_register)
 {
-  printf("Esperando por sinal DONE...\n");
-  for (int i = 0; i < 3; i++)
+  while (!load_control_signals(fpga_register))
   {
-    printf("Esperando");
+    printf("Esperando por sinal DONE...\n");
   }
   printf("\nDONE recebido!\n\n");
 }
@@ -163,17 +189,19 @@ int store_matrix(volatile uint32_t *fpga_register, int *matrix, int size)
   int received = 0;
   int store_count = (elements + 3) / 4; // Calcula quantos STOREs são necessários
 
+  // Array de registradores para ler 4 valores de 32 bits (total 128 bits)
+  volatile uint32_t *data_registers = fpga_register + (0x60 / sizeof(uint32_t));
+
   for (int i = 0; i < store_count; i++)
   {
     send_instruction(fpga_register, 0, 0, 0, 0, size, OPCODE_STORE);
     start_signal(fpga_register);
     wait_for_done(fpga_register);
 
-    // Aqui seria implementada a recepção dos 4 valores da FPGA
-    // Por enquanto, simulamos a recepção
-    printf("Recebendo 4 valores da FPGA...\n");
-    // Simulando valores recebidos (substituir pela leitura real)
-    int val1 = 0, val2 = 0, val3 = 0, val4 = 0;
+    int val1 = data_registers[0];
+    int val2 = data_registers[1];
+    int val3 = data_registers[2];
+    int val4 = data_registers[3];
 
     // Armazena os valores recebidos na matriz
     if (received < elements)
