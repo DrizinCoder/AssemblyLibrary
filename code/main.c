@@ -20,7 +20,7 @@ void store_control_signals(volatile uint32_t *fpga_register);
 void send_instruction(volatile uint32_t *fpga_register, int num1, int num2, int position, int mat_target, int mat_size, int opcode);
 void wait_for_done(volatile uint32_t *fpga_register);
 int load_matrix(volatile uint32_t *fpga_register, int *matrix, int size, int mat_target);
-int store_matrix(volatile uint32_t *fpga_register, int *matrix, int size);
+int store_matrix(volatile uint32_t *fpga_register, int *matrix, int size, int target);
 void read_matrix(int *matrix, int size, const char *name);
 void print_matrix(int *matrix, int size, const char *name);
 int memory_mman(int *fd, volatile uint32_t **fpga_register, void **map_base, void **virt_addr);
@@ -83,7 +83,7 @@ int main()
     }
 
     printf("\nRecebendo resultado da FPGA...\n");
-    store_matrix(fpga_register, matrixR, size);
+    store_matrix(fpga_register, matrixR, size, 0);
 
     printf("\nResultado da operação:\n");
     print_matrix(matrixR, size, "Resultado");
@@ -299,34 +299,99 @@ void wait_for_done(volatile uint32_t *fpga_register)
   printf("\nDONE recebido!\n\n");
 }
 
-int store_matrix(volatile uint32_t *fpga_register, int *matrix, int size)
+int store_matrix(volatile uint32_t *fpga_register, int *matrix, int size, int mat_target)
 {
-  int elements = size * size;
-  int received = 0;
-  int store_count = (elements + 3) / 4; // Calcula quantos STOREs são necessários
-
-  // Array de registradores para ler 4 valores de 32 bits (total 128 bits)
-  volatile uint32_t *data_registers = fpga_register + (0x60 / sizeof(uint32_t));
-
-  for (int i = 0; i < store_count; i++)
+  if (size == 2)
   {
-    send_instruction(fpga_register, 0, 0, 0, 0, size, OPCODE_STORE);
-    wait_for_done(fpga_register);
+    int positions[] = {0, 5}; // Mesmas posições usadas no load
+    int count = 0;
 
-    int val1 = data_registers[0];
-    int val2 = data_registers[1];
-    int val3 = data_registers[2];
-    int val4 = data_registers[3];
+    for (int i = 0; i < 2; i++)
+    {
+      send_instruction(fpga_register, 0, 0, positions[i], mat_target, size, OPCODE_STORE);
+      wait_for_done(fpga_register);
 
-    // Armazena os valores recebidos na matriz
-    if (received < elements)
-      matrix[received++] = val1;
-    if (received < elements)
-      matrix[received++] = val2;
-    if (received < elements)
-      matrix[received++] = val3;
-    if (received < elements)
-      matrix[received++] = val4;
+      // Lê 32 bits (4 valores de 8 bits)
+      uint32_t packed_data = *(fpga_register + (0x60 / sizeof(uint32_t)));
+
+      // Desempacota os 4 valores de 8 bits
+      matrix[count++] = (packed_data >> 0) & 0xFF;
+      matrix[count++] = (packed_data >> 8) & 0xFF;
+      if (count >= size * size)
+        break; // Evita overflow para matrizes pequenas
+
+      matrix[count++] = (packed_data >> 16) & 0xFF;
+      matrix[count++] = (packed_data >> 24) & 0xFF;
+      if (count >= size * size)
+        break;
+    }
+  }
+  else if (size == 3)
+  {
+    int positions[] = {0, 2, 6, 10, 12}; // Mesmo esquema do load
+    int count = 0;
+
+    for (int i = 0; i < 5; i++)
+    {
+      send_instruction(fpga_register, 0, 0, positions[i], mat_target, size, OPCODE_STORE);
+      wait_for_done(fpga_register);
+
+      uint32_t packed_data = *(fpga_register + (0x60 / sizeof(uint32_t)));
+
+      matrix[count++] = (packed_data >> 0) & 0xFF;
+      matrix[count++] = (packed_data >> 8) & 0xFF;
+      if (count >= size * size)
+        break;
+
+      matrix[count++] = (packed_data >> 16) & 0xFF;
+      matrix[count++] = (packed_data >> 24) & 0xFF;
+      if (count >= size * size)
+        break;
+    }
+  }
+  else if (size == 4)
+  {
+    int positions[] = {0, 2, 5, 7, 10, 12, 15, 17}; // Padrão similar
+    int count = 0;
+
+    for (int i = 0; i < 8; i++)
+    {
+      send_instruction(fpga_register, 0, 0, positions[i], mat_target, size, OPCODE_STORE);
+      wait_for_done(fpga_register);
+
+      uint32_t packed_data = *(fpga_register + (0x60 / sizeof(uint32_t)));
+
+      for (int j = 0; j < 4; j++)
+      {
+        if (count < size * size)
+        {
+          matrix[count++] = (packed_data >> (j * 8)) & 0xFF;
+        }
+      }
+    }
+  }
+  else if (size == 5)
+  {
+    int positions[] = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24};
+    int count = 0;
+
+    for (int i = 0; i < 13; i++)
+    {
+      send_instruction(fpga_register, 0, 0, positions[i], mat_target, size, OPCODE_STORE);
+      wait_for_done(fpga_register);
+
+      uint32_t packed_data = *(fpga_register + (0x60 / sizeof(uint32_t)));
+
+      for (int j = 0; j < 4 && count < size * size; j++)
+      {
+        matrix[count++] = (packed_data >> (j * 8)) & 0xFF;
+      }
+    }
+  }
+  else
+  {
+    printf("Tamanho não suportado: %d\n", size);
+    return -1;
   }
 
   return 0;
