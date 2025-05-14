@@ -17,8 +17,7 @@
 
 int load_control_signals(volatile uint32_t *fpga_register);
 void store_control_signals(volatile uint32_t *fpga_register);
-void send_instruction(volatile uint32_t *fpga_register, int num1, int num2, int num3, int mat_target, int mat_size, int opcode);
-void start_signal(volatile uint32_t *fpga_register);
+void send_instruction(volatile uint32_t *fpga_register, int num1, int num2, int position, int mat_target, int mat_size, int opcode);
 void wait_for_done(volatile uint32_t *fpga_register);
 int load_matrix(volatile uint32_t *fpga_register, int *matrix, int size, int mat_target);
 int store_matrix(volatile uint32_t *fpga_register, int *matrix, int size);
@@ -75,13 +74,11 @@ int main()
     if (operation == 1)
     {
       send_instruction(fpga_register, 0, 0, 0, 0, 0, OPCODE_ADD);
-      start_signal(fpga_register);
       wait_for_done(fpga_register);
     }
     else
     {
       send_instruction(fpga_register, 0, 0, 0, 0, 0, OPCODE_SUB);
-      start_signal(fpga_register);
       wait_for_done(fpga_register);
     }
 
@@ -112,38 +109,185 @@ int load_control_signals(volatile uint32_t *fpga_register)
   return (control_signals & 0x01);
 }
 
-// Envia sinais para FPGA
-void store_control_signals(volatile uint32_t *fpga_register)
-{
-  volatile uint32_t *control_signals_addr = fpga_register + (0x20 / sizeof(uint32_t));
-  *control_signals_addr = 0x01;
-}
-
-void send_instruction(volatile uint32_t *fpga_register, int num1, int num2, int num3, int mat_target, int mat_size, int opcode)
+void send_instruction(volatile uint32_t *fpga_register, int num1, int num2, int position, int mat_target, int mat_size, int opcode)
 {
   volatile uint32_t *instruction_register = fpga_register + (0x60 / sizeof(uint32_t));
 
   uint32_t instruction = 0;
 
-  instruction |= (opcode & 0xF);          // Opcode: bits 0-3 (4 bits)
-  instruction |= (mat_size & 0x3) << 4;   // Mat. Size: bits 4-5 (2 bits)
-  instruction |= (mat_target & 0x1) << 6; // Mat Target: bit 6 (1 bit)
-  instruction |= (num1 & 0xFF) << 7;      // num1: bits 7-14 (8 bits)
-  instruction |= (num2 & 0xFF) << 15;     // num2: bits 15-22 (8 bits)
-  instruction |= (num3 & 0xFF) << 23;     // num3: bits 23-30 (8 bits)
-
-  // Garante que o bit 31 fique zerado
-  instruction &= 0x7FFFFFFF;
+  // Montagem da instrução conforme a organização especificada
+  instruction |= (0x7 & 0x7) << 29;       // x: 3 bits (fixo como 0x7)
+  instruction |= (0x1 & 0x1) << 28;       // start: 1 bit (fixo como 1)
+  instruction |= (num1 & 0xFF) << 20;     // num1: 8 bits
+  instruction |= (num2 & 0xFF) << 12;     // num2: 8 bits
+  instruction |= (position & 0x1F) << 7;  // position: 5 bits
+  instruction |= (mat_target & 0x1) << 6; // Mat Targ: 1 bit
+  instruction |= (mat_size & 0x3) << 4;   // Mat. Siz: 2 bits
+  instruction |= (opcode & 0xF);          // Opcode: 4 bits
 
   *instruction_register = instruction;
 
   printf("Instrução de 32 bits montada e enviada: 0x%08X\n", instruction);
 }
 
-void start_signal(volatile uint32_t *fpga_register)
+// Funções auxiliares'
+int load_matrix(volatile uint32_t *fpga_register, int *matrix, int size, int mat_target)
 {
-  printf("Enviando sinal START\n");
-  store_control_signals(fpga_register);
+
+  if (size == 2)
+  {
+    int num1 = matrix[0];
+    int num2 = matrix[1];
+    int num3 = matrix[2];
+    int num4 = matrix[3];
+
+    send_instruction(fpga_register, num1, num2, 0, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num3, num4, 5, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+  }
+  else if (size == 3)
+  {
+    int num1 = matrix[0];
+    int num2 = matrix[1];
+    int num3 = matrix[2];
+    int num4 = matrix[3];
+    int num5 = matrix[4];
+    int num6 = matrix[5];
+    int num7 = matrix[6];
+    int num8 = matrix[7];
+    int num9 = matrix[8];
+
+    send_instruction(fpga_register, num1, num2, 0, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num3, num4, 2, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num5, num6, 6, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num7, num8, 10, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num9, 0, 12, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+  }
+  else if (size == 4)
+  {
+    int num1 = matrix[0];
+    int num2 = matrix[1];
+    int num3 = matrix[2];
+    int num4 = matrix[3];
+    int num5 = matrix[4];
+    int num6 = matrix[5];
+    int num7 = matrix[6];
+    int num8 = matrix[7];
+    int num9 = matrix[8];
+    int num10 = matrix[9];
+    int num11 = matrix[10];
+    int num12 = matrix[11];
+    int num13 = matrix[12];
+    int num14 = matrix[13];
+    int num15 = matrix[14];
+    int num16 = matrix[15];
+
+    // Envia os pares de números com suas posições específicas
+    send_instruction(fpga_register, num1, num2, 0, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num3, num4, 2, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num5, num6, 5, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num7, num8, 7, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num9, num10, 10, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num11, num12, 12, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num13, num14, 15, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num15, num16, 17, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+  }
+  else if (size == 5)
+  {
+    int num1 = matrix[0];
+    int num2 = matrix[1];
+    int num3 = matrix[2];
+    int num4 = matrix[3];
+    int num5 = matrix[4];
+    int num6 = matrix[5];
+    int num7 = matrix[6];
+    int num8 = matrix[7];
+    int num9 = matrix[8];
+    int num10 = matrix[9];
+    int num11 = matrix[10];
+    int num12 = matrix[11];
+    int num13 = matrix[12];
+    int num14 = matrix[13];
+    int num15 = matrix[14];
+    int num16 = matrix[15];
+    int num17 = matrix[16];
+    int num18 = matrix[17];
+    int num19 = matrix[18];
+    int num20 = matrix[19];
+    int num21 = matrix[20];
+    int num22 = matrix[21];
+    int num23 = matrix[22];
+    int num24 = matrix[23];
+    int num25 = matrix[24];
+
+    // Envia os pares de números com suas posições específicas
+    send_instruction(fpga_register, num1, num2, 0, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num3, num4, 2, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num5, num6, 4, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num7, num8, 6, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num9, num10, 8, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num11, num12, 10, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num13, num14, 12, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num15, num16, 14, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num17, num18, 16, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num19, num20, 18, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num21, num22, 20, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num23, num24, 22, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+
+    send_instruction(fpga_register, num25, 0, 24, mat_target, size, OPCODE_LOAD);
+    wait_for_done(fpga_register);
+  }
+
+  return 0;
 }
 
 void wait_for_done(volatile uint32_t *fpga_register)
@@ -153,34 +297,6 @@ void wait_for_done(volatile uint32_t *fpga_register)
     printf("Esperando por sinal DONE...\n");
   }
   printf("\nDONE recebido!\n\n");
-}
-
-// Funções auxiliares
-
-int load_matrix(volatile uint32_t *fpga_register, int *matrix, int size, int mat_target)
-{
-  int elements = size * size;
-  int sent = 0;
-
-  while (sent < elements)
-  {
-    int num1 = 0, num2 = 0, num3 = 0;
-
-    // Preenche os 3 valores (ou menos se for o último envio)
-    if (sent < elements)
-      num1 = matrix[sent++];
-    if (sent < elements)
-      num2 = matrix[sent++];
-    if (sent < elements)
-      num3 = matrix[sent++];
-
-    // Envia a instrução LOAD
-    send_instruction(fpga_register, num1, num2, num3, mat_target, size, OPCODE_LOAD);
-    start_signal(fpga_register);
-    wait_for_done(fpga_register);
-  }
-
-  return 0;
 }
 
 int store_matrix(volatile uint32_t *fpga_register, int *matrix, int size)
@@ -195,7 +311,6 @@ int store_matrix(volatile uint32_t *fpga_register, int *matrix, int size)
   for (int i = 0; i < store_count; i++)
   {
     send_instruction(fpga_register, 0, 0, 0, 0, size, OPCODE_STORE);
-    start_signal(fpga_register);
     wait_for_done(fpga_register);
 
     int val1 = data_registers[0];
