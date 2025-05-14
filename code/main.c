@@ -104,14 +104,14 @@ int main()
 // Observa sinais da FPGA
 int load_control_signals(volatile uint32_t *fpga_register)
 {
-  volatile uint32_t *control_signals_addr = fpga_register + (0x40 / sizeof(uint32_t));
+  volatile uint32_t *control_signals_addr = fpga_register + (0x30 / sizeof(uint32_t));
   uint32_t control_signals = *control_signals_addr;
   return (control_signals & 0x01);
 }
 
 void send_instruction(volatile uint32_t *fpga_register, int num1, int num2, int position, int mat_target, int mat_size, int opcode)
 {
-  volatile uint32_t *instruction_register = fpga_register + (0x60 / sizeof(uint32_t));
+  volatile uint32_t *instruction_register = fpga_register;
 
   uint32_t instruction = 0;
 
@@ -312,7 +312,7 @@ int store_matrix(volatile uint32_t *fpga_register, int *matrix, int size, int ma
       wait_for_done(fpga_register);
 
       // Lê 32 bits (4 valores de 8 bits)
-      uint32_t packed_data = *(fpga_register + (0x60 / sizeof(uint32_t)));
+      uint32_t packed_data = *(fpga_register + (0x10 / sizeof(uint32_t)));
 
       // Desempacota os 4 valores de 8 bits
       matrix[count++] = (packed_data >> 0) & 0xFF;
@@ -336,7 +336,7 @@ int store_matrix(volatile uint32_t *fpga_register, int *matrix, int size, int ma
       send_instruction(fpga_register, 0, 0, positions[i], mat_target, size, OPCODE_STORE);
       wait_for_done(fpga_register);
 
-      uint32_t packed_data = *(fpga_register + (0x60 / sizeof(uint32_t)));
+      uint32_t packed_data = *(fpga_register + (0x10 / sizeof(uint32_t)));
 
       matrix[count++] = (packed_data >> 0) & 0xFF;
       matrix[count++] = (packed_data >> 8) & 0xFF;
@@ -359,7 +359,7 @@ int store_matrix(volatile uint32_t *fpga_register, int *matrix, int size, int ma
       send_instruction(fpga_register, 0, 0, positions[i], mat_target, size, OPCODE_STORE);
       wait_for_done(fpga_register);
 
-      uint32_t packed_data = *(fpga_register + (0x60 / sizeof(uint32_t)));
+      uint32_t packed_data = *(fpga_register + (0x10 / sizeof(uint32_t)));
 
       for (int j = 0; j < 4; j++)
       {
@@ -380,7 +380,7 @@ int store_matrix(volatile uint32_t *fpga_register, int *matrix, int size, int ma
       send_instruction(fpga_register, 0, 0, positions[i], mat_target, size, OPCODE_STORE);
       wait_for_done(fpga_register);
 
-      uint32_t packed_data = *(fpga_register + (0x60 / sizeof(uint32_t)));
+      uint32_t packed_data = *(fpga_register + (0x10 / sizeof(uint32_t)));
 
       for (int j = 0; j < 4 && count < size * size; j++)
       {
