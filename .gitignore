@@ -3,4 +3,4 @@
 *.test.*
 
 # Ignora executáveis gerado pelo Makefile em ambiente Linux
-program
+main
