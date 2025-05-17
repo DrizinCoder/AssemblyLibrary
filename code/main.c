@@ -4,18 +4,25 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <unistd.h>
 
 #define OPCODE_LOAD 0
-#define OPCODE_STORE 7
+#define OPCODE_STORE 8
 
 #define OPCODE_ADD 1
 #define OPCODE_SUB 2
+#define OPCODE_MUL 3
+#define OPCODE_OPS 4
+#define OPCODE_TPS 5
+#define OPCODE_MUI 6
+#define OPCODE_DET 7
 
 #define FPGA_BASE_ADDR 0xFF200000
 #define FPGA_SPAN_ADDR 0x00005000
 
 void send_instruction(int num1, int num2, int position, int mat_target, int mat_size, int opcode);
 int load_control_signals();
+void reset_star();
 
 void wait_for_done();
 
@@ -93,11 +100,60 @@ int main()
     {
       send_instruction(0, 0, 0, 0, 0, OPCODE_ADD);
       wait_for_done();
+      reset_star();
     }
-    else
+    else if (operation == 2)
     {
       send_instruction(0, 0, 0, 0, 0, OPCODE_SUB);
       wait_for_done();
+      reset_star();
+    }
+    else if (operation == 3)
+    {
+      send_instruction(0, 0, 0, 0, 0, OPCODE_MUL);
+      wait_for_done();
+      reset_star();
+    }
+    else if (operation == 4)
+    {
+      send_instruction(0, 0, 0, 0, 0, OPCODE_OPS);
+      wait_for_done();
+      reset_star();
+    }
+    else if (operation == 5)
+    {
+      send_instruction(0, 0, 0, 0, 0, OPCODE_TPS);
+      wait_for_done();
+      reset_star();
+    }
+    else if (operation == 6)
+    {
+      send_instruction(0, 0, 0, 0, 0, OPCODE_MUI);
+      wait_for_done();
+      reset_star();
+    }
+    else if (operation == 7)
+    {
+      if(size == 2){
+        send_instruction(0, 0, 0, 0, 0, OPCODE_DET);
+        wait_for_done();
+        reset_star();
+      }
+      if(size == 3){
+        send_instruction(0, 0, 0, 0, 1, OPCODE_DET);
+        wait_for_done();
+        reset_star();
+      }
+      if(size == 4){
+        send_instruction(0, 0, 0, 0, 2, OPCODE_DET);
+        wait_for_done();
+        reset_star();
+      }
+      if(size == 5){
+        send_instruction(0, 0, 0, 0, 3, OPCODE_DET);
+        wait_for_done();
+        reset_star();
+      }
     }
 
     printf("\nRecebendo resultado da FPGA...\n");
@@ -105,7 +161,8 @@ int main()
 
     printf("\nResultado da operação:\n");
     print_matrix(matrixR, size, "Resultado");
-
+    
+    
     free(matrixA);
     free(matrixB);
     free(matrixR);
@@ -128,16 +185,20 @@ int load_control_signals()
   fpga_register = (int *)(virt_addr + (0x30));
   int control_signals = *fpga_register;
 
-  print_binary((uint8_t)control_signals);
+  int verifica_done = control_signals & 0x08;
 
-  return (control_signals & 0x08);
+  if(verifica_done == 0x08){
+    return 1;
+  }
+
+  return 0;
 }
 
 void send_instruction(int num1, int num2, int position, int mat_target, int mat_size, int opcode)
 {
   uint32_t instruction = 0;
 
-  instruction |= (0x7 & 0x7) << 29;       // Campo 'x' fixo (3 bits)
+  instruction |= (0x0 & 0x7) << 29;       // Campo 'x' fixo (3 bits)
   instruction |= (0x1 & 0x1) << 28;       // Bit 'start' fixo (1 bit)
   instruction |= (num1 & 0xFF) << 20;     // num1 (8 bits)
   instruction |= (num2 & 0xFF) << 12;     // num2 (8 bits)
@@ -148,9 +209,35 @@ void send_instruction(int num1, int num2, int position, int mat_target, int mat_
                                           // Opcode: 4 bits
 
   fpga_register = (int *)(virt_addr);
+
+  //oposite_wait_for_done();
+
   *fpga_register = instruction;
 
   printf("Instrução de 32 bits montada e enviada: 0x%08X\n", instruction);
+}
+
+void reset_star()
+{
+  uint32_t instruction = 0;
+
+  instruction |= (0x0 & 0x7) << 29;       // Campo 'x' fixo (3 bits)
+  instruction |= (0x0 & 0x1) << 28;       // Bit 'start' fixo (1 bit)
+  instruction |= (0x0 & 0xFF) << 20;     // num1 (8 bits)
+  instruction |= (0x0 & 0xFF) << 12;     // num2 (8 bits)
+  instruction |= (0x0 & 0x1F) << 7;  // position (5 bits)
+  instruction |= (0x0 & 0x1) << 6; // mat_target (1 bit)
+  instruction |= (0x0 & 0x3) << 4;   // mat_size (2 bits)
+  instruction |= (0x0 & 0xF);          // opcode (4 bits)
+                                          // Opcode: 4 bits
+
+  fpga_register = (int *)(virt_addr);
+
+  //oposite_wait_for_done();
+
+  *fpga_register = instruction;
+
+  printf("Reset enviado: 0x%08X\n", instruction);
 }
 
 // Funções Auxiliares'
@@ -166,9 +253,11 @@ int load_matrix(int *matrix, int size, int mat_target)
 
     send_instruction(num1, num2, 0, mat_target, 0, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num3, num4, 5, mat_target, 0, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
   }
   else if (size == 3)
   {
@@ -184,18 +273,23 @@ int load_matrix(int *matrix, int size, int mat_target)
 
     send_instruction(num1, num2, 0, mat_target, 1, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num3, num4, 2, mat_target, 1, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num5, num6, 6, mat_target, 1, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num7, num8, 10, mat_target, 1, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num9, 0, 12, mat_target, 1, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
   }
   else if (size == 4)
   {
@@ -313,9 +407,15 @@ int load_matrix(int *matrix, int size, int mat_target)
 
 void wait_for_done()
 {
+  char spinner[] = {'|', '/', '-', '\\'};  // Caractere da barrinha giratória
+  int i = 0;
+
   while (!load_control_signals())
   {
-    printf("...\n");
+    printf("\r%c", spinner[i]);
+    fflush(stdout); 
+
+    i = (i + 1) % 4;
   }
   printf("\nDONE recebido!\n\n");
 }
@@ -324,70 +424,37 @@ int store_matrix(int *matrix, int size, int mat_target)
 {
   if (size == 2)
   {
-    int positions[] = {0, 5};
-    int count = 0;
+    send_instruction(0, 0, 0, 0, 0, OPCODE_STORE);
+    wait_for_done();
+    reset_star();
+    fpga_register = (int *)((virt_addr) + (0x10));
+    uint32_t packed_data = *fpga_register;
 
-    for (int i = 0; i < 2; i++)
-    {
-      send_instruction(0, 0, positions[i], mat_target, size, OPCODE_STORE);
-      wait_for_done();
+    int8_t byte0 = (packed_data >> 24) & 0xFF;
+    int8_t byte1 = (packed_data >> 16) & 0xFF;
+    int8_t byte2 = (packed_data >> 8) & 0xFF;
+    int8_t byte3 = packed_data & 0xFF;
 
-      fpga_register = (int *)((virt_addr) + (0x10));
-
-      // Lê 32 bits
-      uint32_t packed_data = *fpga_register;
-
-      uint8_t byte0 = (packed_data >> 24) & 0xFF;
-      uint8_t byte1 = (packed_data >> 16) & 0xFF;
-      uint8_t byte2 = (packed_data >> 8) & 0xFF;
-      uint8_t byte3 = packed_data & 0xFF;
-
-      if (positions[i] == 0)
-      {
-        matrix[0] = (int)byte0;
-        matrix[1] = (int)byte1;
-      }
-      else if (positions[i] == 5)
-      {
-        matrix[2] = (int)byte2;
-        matrix[3] = (int)byte3;
-      }
-    }
+    matrix[3] = (int)byte0;
+    matrix[2] = (int)byte1;
+    matrix[1] = (int)byte2;
+    matrix[0] = (int)byte3;
   }
   else if (size == 3)
   {
-    int positions[] = {0, 2, 6, 10, 12};
-    int count = 0;
-
-    for (int i = 0; i < 5; i++)
-    {
-      printf("Implementar!");
-    }
+    printf("Falta fazer o código");
   }
   else if (size == 4)
   {
-    int positions[] = {0, 2, 5, 7, 10, 12, 15, 17};
-    int count = 0;
-
-    for (int i = 0; i < 8; i++)
-    {
-      printf("Implementar!");
-    }
+    printf("Falta fazer o código");
   }
   else if (size == 5)
-  {
-    int positions[] = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24};
-    int count = 0;
-
-    for (int i = 0; i < 13; i++)
-    {
-      printf("Implementar!");
-    }
+  { 
+    printf("Falta fazer o código"); 
   }
   else
   {
     printf("Tamanho não suportado: %d\n", size);
-    return -1;
   }
 
   return 0;
@@ -425,3 +492,5 @@ void print_binary(uint8_t byte)
   }
   printf("\n");
 }
+
+
