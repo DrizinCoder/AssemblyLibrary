@@ -148,19 +148,19 @@ void operations()
 
 int size_mask(int value)
 {
-  if (2)
+  if (value == 2)
   {
     return 0;
   }
-  else if (3)
+  else if (value == 3)
   {
     return 1;
   }
-  else if (4)
+  else if (value == 4)
   {
     return 2;
   }
-  else if (5)
+  else if (value == 5)
   {
     return 3;
   }
