@@ -35,6 +35,7 @@ driver:
 
     bl load
     bl operation
+    bl store
     
     pop {r4-r8, pc} 
 
@@ -48,6 +49,10 @@ operation:
 
     pop {br}
 
+store:
+    push {lr}
+
+    pop {br}
 
 welcome:
     push {lr}
