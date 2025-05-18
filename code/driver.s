@@ -3,56 +3,67 @@
 .section .data
     file_descriptor: .word 0
     dev_mem:        .asciz "/dev/mem"
-    mapped_addr:    .word 0  @ Adicionado para armazenar o endereço mapeado
+    mapped_addr:    .word 0  @ Stores the mapped address
 
-    param_num1:     .word 0
-    param_num2:     .word 0
-    param_position: .word 0
-    param_target:   .word 0
-    param_size:     .word 0
-    param_opcode:   .word 0
+    matrixA:        .word 0
+    matrixB:        .word 0
+    matrixR:        .word 0
+    matrix_size:    .word 0
+    opcode:         .word 0
 
-    welcome: .ascii "\Welcome to Driver\n"
+    welcome: .ascii "\nWelcome to Driver\n"
     welcome_len = . - welcome
 
 .section .text
 driver:
-    push {r4-r8, lr}  @ Preserva mais registradores
+    push {r4-r8, lr}  @ Save registers
     
-    @ Armazena parâmetros
-    ldr r4, =param_num1
-    str r0, [r4]
-    ldr r4, =param_num2
-    str r1, [r4]
-    ldr r4, =param_position
-    str r2, [r4]
-    ldr r4, =param_target
+    @ Store parameters
+    ldr r4, =matrixA
+    str r0, [r4]      @ matrixA pointer
+    ldr r4, =matrixB
+    str r1, [r4]      @ matrixB pointer
+    ldr r4, =matrixR
+    str r2, [r4]      @ matrixR pointer
+    ldr r4, =matrix_size
     str r3, [r4]
-    
-    @ Parâmetros da pilha (assumindo que foram push {r0-r3, lr} na chamada)
-    ldr r4, [sp, #24]   @ Ajuste o offset conforme sua chamada
-    ldr r5, =param_size
-    str r4, [r5]
-    ldr r4, [sp, #28]
-    ldr r5, =param_opcode
-    str r4, [r5]
+    ldr r4, [sp, #16]
+    ldr r5, =opcode
 
     bl mmap_setup
+    bl welcome
 
-    mov r7, #4
-    mov r0, #1
+    bl load
+    bl operation
+    
+    pop {r4-r8, pc} 
+
+load:
+    push {lr}
+
+    pop {br}
+
+operation:
+    push {lr}
+
+    pop {br}
+
+
+welcome:
+    push {lr}
+
+    mov r7, #4        @ syscall write
+    mov r0, #1        @ stdout
     ldr r1, =welcome
     mov r2, #welcome_len
     svc #0
-
-    @ Continua a execução normalmente...
-    
-    pop {r4-r8, pc}
+     
+    pop{pc}
 
 mmap_setup:
     push {lr}
     
-    @ Abre /dev/mem
+    @ Open /dev/mem
     ldr r0, =dev_mem
     mov r1, #2          @ O_RDWR
     mov r7, #5          @ syscall open
@@ -64,27 +75,22 @@ mmap_setup:
     ldr r1, =file_descriptor
     str r0, [r1]
     
-    @ Configura mmap
-    mov r0, #0              @ Endereço sugerido pelo kernel
-    ldr r1, =0x1000         @ Tamanho
-    mov r2, #3              @ PROT_READ|PROT_WRITE
-    mov r3, #1              @ MAP_SHARED
+    mov r0, #0          
+    ldr r1, =0x1000     
+    mov r2, #3          
+    mov r3, #1          
     ldr r4, =file_descriptor
-    ldr r4, [r4]            @ File descriptor
-    ldr r5, =0xFF200     @ Endereço físico correto
-    mov r7, #192            @ syscall mmap2
+    ldr r4, [r4]        
+    ldr r5, =0xFF200    
+    mov r7, #192        
     svc #0
     
-    cmn r0, #1
+    cmn r0, #1          
     beq fail_mmap
     
-    @ Armazena o endereço mapeado
+    @ Store mapped address
     ldr r1, =mapped_addr
     str r0, [r1]
-
-    @ Verifica se mmap foi bem sucedido
-    cmp r1, #0
-    beq fail_mmap
     
     pop {pc}
 
@@ -93,7 +99,7 @@ fail_open:
     pop {pc}
 
 fail_mmap:
-    @ Fecha o arquivo se mmap falhou
+    @ Close file if mmap failed
     ldr r0, =file_descriptor
     ldr r0, [r0]
     mov r7, #6          @ syscall close
@@ -101,3 +107,4 @@ fail_mmap:
     
     mov r0, #-1
     pop {pc}
+    
