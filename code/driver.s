@@ -930,10 +930,157 @@ load5x5:
 operation:
     push {lr}
 
-    @ code ...
+    ldr r0, =opcode
+    ldrsb r0, [r0]
+
+    cmp r0, #0x1
+    beq sum
+
+    cmp r0, #0x2
+    beq subtract
+    
+    cmp r0, #0x3
+    beq multiplication
+
+    cmp r0, #0x4
+    beq ops
+
+    cmp r0, #0x5
+    beq tps
+
+    cmp r0, #0x6
+    beq mui
+
+    cmp r0, #0x7
+    beq det
 
     pop {lr}
     bx lr
+
+sum:
+    push {lr}
+    
+    mov r1, #0x1
+    mov r3, #0x10000000
+    orr r3, r3, r1
+
+    ldr r11, =mapped_addr
+    ldr r11, [r11]
+
+    str r3, [r11]
+
+    bl wait_for_done 
+
+    pop {lr}
+    bx lr
+
+subtract:
+    push {lr}
+
+    mov r1, #0x2
+    mov r3, #0x10000000
+    orr r3, r3, r1
+
+    ldr r11, =mapped_addr
+    ldr r11, [r11]
+
+    str r3, [r11]
+
+    bl wait_for_done 
+
+    pop {lr}
+    bx lr
+
+multiplication:
+    push {lr}
+
+    mov r1, #0x3
+    mov r3, #0x10000000
+    orr r3, r3, r1
+
+    ldr r11, =mapped_addr
+    ldr r11, [r11]
+
+    str r3, [r11]
+
+    bl wait_for_done 
+
+    pop {lr}
+    bx lr
+
+ops:
+    push {lr}
+
+    mov r1, #0x4
+    mov r3, #0x10000000
+    orr r3, r3, r1
+
+    ldr r11, =mapped_addr
+    ldr r11, [r11]
+
+    str r3, [r11]
+
+    bl wait_for_done 
+
+    pop {lr}
+    bx lr
+
+tps:
+    push {lr}
+
+    mov r1, #0x5
+    mov r3, #0x10000000
+    orr r3, r3, r1
+
+    ldr r11, =mapped_addr
+    ldr r11, [r11]
+
+    str r3, [r11]
+
+    bl wait_for_done 
+
+    pop {lr}
+    bx lr
+
+mui:
+    push {lr}
+    
+    mov r1, #0x6
+    mov r3, #0x10000000
+    orr r3, r3, r1
+
+    ldr r11, =mapped_addr
+    ldr r11, [r11]
+
+    str r3, [r11]
+
+    bl wait_for_done 
+
+    pop {lr}
+    bx lr
+
+det:
+    push {lr}
+
+    mov r1, #0x7
+    mov r3, #0x10000000
+    
+    ldr r2, =matrix_size
+    ldrsb r2, [r2]
+
+    orr r3, r3, r2, lsl #4
+    orr r3, r3, r1
+
+    ldr r11, =mapped_addr
+    ldr r11, [r11]
+
+    str r3, [r11]
+
+    bl wait_for_done 
+
+    pop {lr}
+    bx lr
+
 
 store:
     push {lr}
