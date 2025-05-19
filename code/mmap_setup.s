@@ -34,10 +34,6 @@ mmap_setup:
     cmn r0, #1          
     beq fail_mmap
     
-    @ Store mapped address
-    ldr r1, =mapped_addr
-    str r0, [r1]
-    
     pop {lr}
     bx lr
 
