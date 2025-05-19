@@ -163,7 +163,7 @@ load5x5:
     bx lr
 
 wait_for_done:
-    push {r0-r2, lr}             @ Preserva o registrador de retorno
+    push {r0-r3, lr}             @ Preserva o registrador de retorno
 
     ldr r0, =mapped_addr         @ Carrega o endereço base
     add r0, r0, #0x30            @ Adiciona offset 0x30
@@ -178,8 +178,19 @@ wait_loop:
     b wait_loop                  @ Volta para o início do loop
 
 done_ready:
-    pop {r0-r2, lr}                     @ Restaura o registrador de retorno
+    bl restart
+
+    pop {r0-r3, lr}              @ Restaura o registrador de retorno
     bx lr                        @ Retorna da função
+
+restart:
+    @  enviar restart
+    mov r3, #0x00000000    
+
+    ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
+    str r10, [r11]               @ Envia para FPGA
+
+    bx lr
 
 operation:
     push {lr}
