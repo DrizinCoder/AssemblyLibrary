@@ -927,6 +927,76 @@ load5x5:
     pop {lr}
     bx lr
 
+operation:
+    push {lr}
+
+    @ code ...
+
+    pop {lr}
+    bx lr
+
+store:
+    push {lr}
+
+    ldr r0, =matrix_size
+    ldr r0, [r0]
+
+    cmp r0, #0
+    beq store2x2
+
+    cmp r0, #1
+    beq store3x3
+
+    cmp r0, #2
+    beq store4x4
+
+    cmp r0, #3
+    beq store5x5
+
+    pop {lr}
+    bx lr
+
+store2x2:
+    push {lr}
+
+    @ code ...
+
+    pop {lr}
+    bx lr
+
+store3x3:
+    push {lr}
+
+    @ code ...
+
+    pop {lr}
+    bx lr
+
+store4x4:
+    push {lr}
+
+    @ code ...
+
+    pop {lr}
+    bx lr
+
+store5x5:
+    push {lr}
+
+    @ code ...
+
+    pop {lr}
+    bx lr
+
+welcome:
+    mov r7, #4        @ syscall write
+    mov r0, #1        @ stdout
+    ldr r1, =welcome_msg
+    mov r2, #welcome_msg_len
+    svc #0
+
+    bx lr
+
 @ Aqui pode está errado!!!
 wait_for_done:
     push {r0-r3, lr}             @ Preserva o registrador de retorno
@@ -955,30 +1025,5 @@ restart:
 
     ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
     str r10, [r11]               @ Envia para FPGA
-
-    bx lr
-
-operation:
-    push {lr}
-
-    @ code ...
-
-    pop {lr}
-    bx lr
-
-store:
-    push {lr}
-
-    @ code ...
-
-    pop {lr}
-    bx lr
-
-welcome:
-    mov r7, #4        @ syscall write
-    mov r0, #1        @ stdout
-    ldr r1, =welcome_msg
-    mov r2, #welcome_msg_len
-    svc #0
 
     bx lr
