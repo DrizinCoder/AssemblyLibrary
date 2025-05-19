@@ -5,13 +5,13 @@
 #include <unistd.h>
 #include <stdint.h>
 
-extern void driver(int *matrixA, int *matrixB, int *matrixR, int size, int op_opcode);
+extern void driver(int8_t *matrixA, int8_t *matrixB, int8_t *matrixR, int size, int op_opcode);
 
 void operations();
 int size_mask(int value);
-void freePtr(int *a, int *b, int *c);
-void read_matrix(int *matrix, int size, const char *name);
-void print_matrix(int *matrix, int size, const char *name);
+void freePtr(int8_t *a, int8_t *b, int8_t *c);
+void read_matrix(int8_t *matrix, int size, const char *name);
+void print_matrix(int8_t *matrix, int size, const char *name);
 
 int main()
 {
@@ -56,9 +56,9 @@ void operations()
 
   printf("\n");
 
-  int *matrixA = (int *)calloc(size * size, sizeof(int));
-  int *matrixB = (int *)calloc(size * size, sizeof(int));
-  int *matrixR = (int *)calloc(size * size, sizeof(int));
+  int8_t *matrixA = (int8_t *)calloc(size * size, sizeof(int8_t));
+  int8_t *matrixB = (int8_t *)calloc(size * size, sizeof(int8_t));
+  int8_t *matrixR = (int8_t *)calloc(size * size, sizeof(int));
 
   if (operation == 1)
   {
@@ -170,31 +170,31 @@ int size_mask(int value)
   }
 }
 
-void freePtr(int *a, int *b, int *c)
+void freePtr(int8_t *a, int8_t *b, int8_t *c)
 {
   free(a);
   free(b);
   free(c);
 }
 
-void read_matrix(int *matrix, int size, const char *name)
+void read_matrix(int8_t *matrix, int size, const char *name)
 {
   printf("Digite os valores da matriz %s (%dx%d):\n", name, size, size);
   for (int i = 0; i < size * size; i++)
   {
     printf("%s[%d][%d]: ", name, i / size, i % size);
-    scanf("%d", &matrix[i]);
+    scanf("%hhd", &matrix[i]);
   }
 }
 
-void print_matrix(int *matrix, int size, const char *name)
+void print_matrix(int8_t *matrix, int size, const char *name)
 {
   printf("Matriz %s:\n", name);
   for (int i = 0; i < size; i++)
   {
     for (int j = 0; j < size; j++)
     {
-      printf("%4d", matrix[i * size + j]);
+      printf("%4hhd", matrix[i * size + j]);
     }
     printf("\n");
   }
