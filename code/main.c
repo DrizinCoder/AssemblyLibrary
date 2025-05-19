@@ -312,27 +312,35 @@ int load_matrix(int *matrix, int size, int mat_target)
 
     send_instruction(num1, num2, 0, mat_target, 2, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num3, num4, 2, mat_target, 2, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num5, num6, 5, mat_target, 2, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num7, num8, 7, mat_target, 2, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num9, num10, 10, mat_target, 2, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num11, num12, 12, mat_target, 2, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num13, num14, 15, mat_target, 2, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num15, num16, 17, mat_target, 2, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
   }
   else if (size == 5)
   {
@@ -364,42 +372,55 @@ int load_matrix(int *matrix, int size, int mat_target)
 
     send_instruction(num1, num2, 0, mat_target, 3, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num3, num4, 2, mat_target, 3, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num5, num6, 4, mat_target, 3, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num7, num8, 6, mat_target, 3, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num9, num10, 8, mat_target, 3, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num11, num12, 10, mat_target, 3, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num13, num14, 12, mat_target, 3, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num15, num16, 14, mat_target, 3, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num17, num18, 16, mat_target, 3, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num19, num20, 18, mat_target, 3, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num21, num22, 20, mat_target, 3, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num23, num24, 22, mat_target, 3, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
 
     send_instruction(num25, 0, 24, mat_target, 3, OPCODE_LOAD);
     wait_for_done();
+    reset_star();
   }
 
   return 0;
@@ -442,15 +463,220 @@ int store_matrix(int *matrix, int size, int mat_target)
   }
   else if (size == 3)
   {
-    printf("Falta fazer o código");
+    send_instruction(0, 0, 0, 0, 1, OPCODE_STORE);
+    wait_for_done();
+    reset_star();
+    fpga_register = (int *)((virt_addr) + (0x10));
+    uint32_t packed_data = *fpga_register;
+
+    int8_t byte0 = (packed_data >> 24) & 0xFF;
+    int8_t byte1 = (packed_data >> 16) & 0xFF;
+    int8_t byte2 = (packed_data >> 8) & 0xFF;
+    int8_t byte3 = packed_data & 0xFF;
+
+    matrix[3] = (int)byte0;
+    matrix[2] = (int)byte1;
+    matrix[1] = (int)byte2;
+    matrix[0] = (int)byte3;
+
+    send_instruction(0, 0, 6, 0, 1, OPCODE_STORE);
+    wait_for_done();
+    reset_star();
+    fpga_register = (int *)((virt_addr) + (0x10));
+    packed_data = *fpga_register;
+
+    byte0 = (packed_data >> 24) & 0xFF;
+    byte1 = (packed_data >> 16) & 0xFF;
+    byte2 = (packed_data >> 8) & 0xFF;
+    byte3 = packed_data & 0xFF;
+
+    matrix[7] = (int)byte0;
+    matrix[6] = (int)byte1;
+    matrix[5] = (int)byte2;
+    matrix[4] = (int)byte3;
+
+    send_instruction(0, 0, 12, 0, 1, OPCODE_STORE);
+    wait_for_done();
+    reset_star();
+    fpga_register = (int *)((virt_addr) + (0x10));
+    packed_data = *fpga_register;
+
+    byte3 = (packed_data >> 24) & 0xFF;
+    matrix[8] = (int)byte3;
   }
   else if (size == 4)
   {
-    printf("Falta fazer o código");
+    send_instruction(0, 0, 0, 0, 2, OPCODE_STORE);
+    wait_for_done();
+    reset_star();
+    fpga_register = (int *)((virt_addr) + (0x10));
+    uint32_t packed_data = *fpga_register;
+
+    int8_t byte0 = (packed_data >> 24) & 0xFF;
+    int8_t byte1 = (packed_data >> 16) & 0xFF;
+    int8_t byte2 = (packed_data >> 8) & 0xFF;
+    int8_t byte3 = packed_data & 0xFF;
+
+    matrix[3] = (int)byte0;
+    matrix[2] = (int)byte1;
+    matrix[1] = (int)byte2;
+    matrix[0] = (int)byte3;
+
+    send_instruction(0, 0, 5, 0, 2, OPCODE_STORE);
+    wait_for_done();
+    reset_star();
+    fpga_register = (int *)((virt_addr) + (0x10));
+    packed_data = *fpga_register;
+
+    byte0 = (packed_data >> 24) & 0xFF;
+    byte1 = (packed_data >> 16) & 0xFF;
+    byte2 = (packed_data >> 8) & 0xFF;
+    byte3 = packed_data & 0xFF;
+
+    matrix[7] = (int)byte0;
+    matrix[6] = (int)byte1;
+    matrix[5] = (int)byte2;
+    matrix[4] = (int)byte3;
+
+    send_instruction(0, 0, 10, 0, 2, OPCODE_STORE);
+    wait_for_done();
+    reset_star();
+    fpga_register = (int *)((virt_addr) + (0x10));
+    packed_data = *fpga_register;
+
+    byte0 = (packed_data >> 24) & 0xFF;
+    byte1 = (packed_data >> 16) & 0xFF;
+    byte2 = (packed_data >> 8) & 0xFF;
+    byte3 = packed_data & 0xFF;
+
+    matrix[11] = (int)byte0;
+    matrix[10] = (int)byte1;
+    matrix[9] = (int)byte2;
+    matrix[8] = (int)byte3;
+
+    send_instruction(0, 0, 15, 0, 2, OPCODE_STORE);
+    wait_for_done();
+    reset_star();
+    fpga_register = (int *)((virt_addr) + (0x10));
+    packed_data = *fpga_register;
+
+    byte0 = (packed_data >> 24) & 0xFF;
+    byte1 = (packed_data >> 16) & 0xFF;
+    byte2 = (packed_data >> 8) & 0xFF;
+    byte3 = packed_data & 0xFF;
+
+    matrix[15] = (int)byte0;
+    matrix[14] = (int)byte1;
+    matrix[13] = (int)byte2;
+    matrix[12] = (int)byte3;
   }
   else if (size == 5)
   { 
-    printf("Falta fazer o código"); 
+    send_instruction(0, 0, 0, 0, 3, OPCODE_STORE);
+    wait_for_done();
+    reset_star();
+    fpga_register = (int *)((virt_addr) + (0x10));
+    uint32_t packed_data = *fpga_register;
+
+    int8_t byte0 = (packed_data >> 24) & 0xFF;
+    int8_t byte1 = (packed_data >> 16) & 0xFF;
+    int8_t byte2 = (packed_data >> 8) & 0xFF;
+    int8_t byte3 = packed_data & 0xFF;
+
+    matrix[3] = (int)byte0;
+    matrix[2] = (int)byte1;
+    matrix[1] = (int)byte2;
+    matrix[0] = (int)byte3;
+
+    send_instruction(0, 0, 4, 0, 3, OPCODE_STORE);
+    wait_for_done();
+    reset_star();
+    fpga_register = (int *)((virt_addr) + (0x10));
+    packed_data = *fpga_register;
+
+    byte0 = (packed_data >> 24) & 0xFF;
+    byte1 = (packed_data >> 16) & 0xFF;
+    byte2 = (packed_data >> 8) & 0xFF;
+    byte3 = packed_data & 0xFF;
+
+    matrix[7] = (int)byte0;
+    matrix[6] = (int)byte1;
+    matrix[5] = (int)byte2;
+    matrix[4] = (int)byte3;
+
+    send_instruction(0, 0, 8, 0, 3, OPCODE_STORE);
+    wait_for_done();
+    reset_star();
+    fpga_register = (int *)((virt_addr) + (0x10));
+    packed_data = *fpga_register;
+
+    byte0 = (packed_data >> 24) & 0xFF;
+    byte1 = (packed_data >> 16) & 0xFF;
+    byte2 = (packed_data >> 8) & 0xFF;
+    byte3 = packed_data & 0xFF;
+
+    matrix[11] = (int)byte0;
+    matrix[10] = (int)byte1;
+    matrix[9] = (int)byte2;
+    matrix[8] = (int)byte3;
+
+    send_instruction(0, 0, 12, 0, 3, OPCODE_STORE);
+    wait_for_done();
+    reset_star();
+    fpga_register = (int *)((virt_addr) + (0x10));
+    packed_data = *fpga_register;
+
+    byte0 = (packed_data >> 24) & 0xFF;
+    byte1 = (packed_data >> 16) & 0xFF;
+    byte2 = (packed_data >> 8) & 0xFF;
+    byte3 = packed_data & 0xFF;
+
+    matrix[15] = (int)byte0;
+    matrix[14] = (int)byte1;
+    matrix[13] = (int)byte2;
+    matrix[12] = (int)byte3;
+
+    send_instruction(0, 0, 16, 0, 3, OPCODE_STORE);
+    wait_for_done();
+    reset_star();
+    fpga_register = (int *)((virt_addr) + (0x10));
+    packed_data = *fpga_register;
+
+    byte0 = (packed_data >> 24) & 0xFF;
+    byte1 = (packed_data >> 16) & 0xFF;
+    byte2 = (packed_data >> 8) & 0xFF;
+    byte3 = packed_data & 0xFF;
+
+    matrix[19] = (int)byte0;
+    matrix[18] = (int)byte1;
+    matrix[17] = (int)byte2;
+    matrix[16] = (int)byte3;
+
+    send_instruction(0, 0, 20, 0, 3, OPCODE_STORE);
+    wait_for_done();
+    reset_star();
+    fpga_register = (int *)((virt_addr) + (0x10));
+    packed_data = *fpga_register;
+
+    byte0 = (packed_data >> 24) & 0xFF;
+    byte1 = (packed_data >> 16) & 0xFF;
+    byte2 = (packed_data >> 8) & 0xFF;
+    byte3 = packed_data & 0xFF;
+
+    matrix[23] = (int)byte0;
+    matrix[22] = (int)byte1;
+    matrix[21] = (int)byte2;
+    matrix[20] = (int)byte3;
+
+    send_instruction(0, 0, 24, 0, 3, OPCODE_STORE);
+    wait_for_done();
+    reset_star();
+    fpga_register = (int *)((virt_addr) + (0x10));
+    packed_data = *fpga_register;
+
+    byte0 = packed_data & 0xFF;
+
+    matrix[24] = (int)byte0;
   }
   else
   {
