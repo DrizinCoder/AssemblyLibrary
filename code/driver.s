@@ -66,140 +66,69 @@ load2x2:
 
     ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
 
-    ldr r0, =matrixA             @ Carregamos o endereço da matriz A
-    ldr r1, [r0, #0]             @ Primeiro inteiro (contém num1 e num2)
-    ldr r2, [r0, #4]             @ Segundo inteiro (contém num3 e num4)
-
-    and r6, r1, #0x000000FF      @ num1 = bits 0-7 do primeiro inteiro
-    lsr r7, r1, #8               @ num2 = bits 8-15 do primeiro inteiro
-    and r7, r7, #0x000000FF      @ Garantimos que só temos 8 bits
-    and r8, r2, #0x000000FF      @ num3 = bits 0-7 do segundo inteiro
-    lsr r9, r2, #8               @ num4 = bits 8-15 do segundo inteiro
-    and r9, r9, #0x000000FF      @ Garantimos que só temos 8 bits
+    ldr r0, =matrixA             @ Ponteiro para matrixA
+    ldrsb r6, [r0, #0]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r7, [r0, #1]           @ num2 = matrixA[1]
+    ldrsb r8, [r0, #2]           @ num3 = matrixA[2]
+    ldrsb r9, [r0, #3]           @ num4 = matrixA[3]
 
     mov r3, #0                   @ Mat Targ = 0 (matriz A)
-    mov r4, #0                   @ Position inicial = 0
-    mov r5, #5                   @ Position seguinte = 5
-    mov r12, #0                  @ Mat. Siz = 00 (2x2) e Opcode = 0000
+    mov r4, #0                   @ Position = 0
+    mov r5, #5                   @ Position = 5
+    mov r12, #0                  @ Mat. Siz = 00 (2x2), Opcode = 0000
 
-    mov r10, #0                  @ Limpamos o registrador r10
-    orr r10, r10, #0x10000000    @ Setamos o bit 28 para 1
+    @ Primeira instrução (num1 e num2)
+    mov r10, #0x10000000         @ Bit 28 = 1
+    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
+    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
+    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
+    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
 
-    @ Configuramos num1 (bits 20-27)
-    lsl r6, r6, #20              @ Deslocamos num1 para a posição correta
-    orr r10, r10, r6             @ Adicionamos ao registrador de instrução
+    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
+    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
 
-    @ Configuramos num2 (bits 12-19)
-    lsl r7, r7, #12              @ Deslocamos num2 para a posição correta
-    orr r10, r10, r7             @ Adicionamos ao registrador de instrução
-
-    @ Configuramos position (bits 7-11)
-    lsl r4, r4, #7               @ Deslocamos position para a posição correta
-    orr r10, r10, r4             @ Adicionamos ao registrador de instrução
-
-    @ Configuramos Mat Targ (bit 6)
-    lsl r3, r3, #6               @ Deslocamos Mat Targ para a posição correta
-    orr r10, r10, r3             @ Adicionamos ao registrador de instrução
-
-    @ Configuramos Mat. Siz (bits 4-5) e Opcode (bits 0-3)
-    orr r10, r10, r12            @ Adicionamos ao registrador de instrução
-
-    str r10, [r11]               @ Escrevemos a instrução na FPGA
-
+    orr r10, r10, r12            @ Mat. Siz + Opcode
+    str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
-    mov r10, #0                  @ Limpamos o registrador r10
-    orr r10, r10, #0x10000000    @ Setamos o bit 28 para 1
-
-    @ Configuramos num3 (bits 20-27)
-    lsl r8, r8, #20              @ Deslocamos num3 para a posição correta
-    orr r10, r10, r8             @ Adicionamos ao registrador de instrução
-
-    @ Configuramos num4 (bits 12-19)
-    lsl r9, r9, #12              @ Deslocamos num4 para a posição correta
-    orr r10, r10, r9             @ Adicionamos ao registrador de instrução
-
-    @ Configuramos position (bits 7-11)
-    lsl r5, r5, #7               @ Deslocamos position para a posição correta
-    orr r10, r10, r5             @ Adicionamos ao registrador de instrução
-
-    @ Configuramos Mat Targ (bit 6)
-    lsl r3, r3, #6               @ Deslocamos Mat Targ para a posição correta
-    orr r10, r10, r3             @ Adicionamos ao registrador de instrução
-
-    @ Configuramos Mat. Siz (bits 4-5) e Opcode (bits 0-3)
-    orr r10, r10, r12            @ Adicionamos ao registrador de instrução
-
-    str r10, [r11]               @ Escrevemos a instrução na FPGA
-
+    @ Segunda instrução (num3 e num4)
+    mov r10, #0x10000000         @ Bit 28 = 1
+    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
+    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
+    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
+    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
+    orr r10, r10, r12            @ Mat. Siz + Opcode
+    str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
-    ldr r0, =matrixB             @ Carregamos o endereço da matriz A
-    ldr r1, [r0, #0]             @ Primeiro inteiro (contém num1 e num2)
-    ldr r2, [r0, #4]             @ Segundo inteiro (contém num3 e num4)
+    ldr r0, =matrixB             @ Ponteiro para matrixB
+    ldrsb r6, [r0, #0]           @ num1 = matrixB[0]
+    ldrsb r7, [r0, #1]           @ num2 = matrixB[1]
+    ldrsb r8, [r0, #2]           @ num3 = matrixB[2]
+    ldrsb r9, [r0, #3]           @ num4 = matrixB[3]
 
-    and r6, r1, #0x000000FF      @ num1 = bits 0-7 do primeiro inteiro
-    lsr r7, r1, #8               @ num2 = bits 8-15 do primeiro inteiro
-    and r7, r7, #0x000000FF      @ Garantimos que só temos 8 bits
-    and r8, r2, #0x000000FF      @ num3 = bits 0-7 do segundo inteiro
-    lsr r9, r2, #8               @ num4 = bits 8-15 do segundo inteiro
-    and r9, r9, #0x000000FF      @ Garantimos que só temos 8 bits
+    mov r3, #1                   @ Mat Targ = 1 (matriz B)
+    mov r4, #0                   @ Position = 0
+    mov r5, #5                   @ Position = 5
 
-    mov r3, #1                   @ Mat Targ = 0 (matriz A)
-    mov r4, #0                   @ Position inicial = 0
-    mov r5, #5                   @ Position seguinte = 5
-    mov r12, #0                  @ Mat. Siz = 00 (2x2) e Opcode = 0000
-
-    mov r10, #0                  @ Limpamos o registrador r10
-    orr r10, r10, #0x10000000    @ Setamos o bit 28 para 1
-
-    @ Configuramos num1 (bits 20-27)
-    lsl r6, r6, #20              @ Deslocamos num1 para a posição correta
-    orr r10, r10, r6             @ Adicionamos ao registrador de instrução
-
-    @ Configuramos num2 (bits 12-19)
-    lsl r7, r7, #12              @ Deslocamos num2 para a posição correta
-    orr r10, r10, r7             @ Adicionamos ao registrador de instrução
-
-    @ Configuramos position (bits 7-11)
-    lsl r4, r4, #7               @ Deslocamos position para a posição correta
-    orr r10, r10, r4             @ Adicionamos ao registrador de instrução
-
-    @ Configuramos Mat Targ (bit 6)
-    lsl r3, r3, #6               @ Deslocamos Mat Targ para a posição correta
-    orr r10, r10, r3             @ Adicionamos ao registrador de instrução
-
-    @ Configuramos Mat. Siz (bits 4-5) e Opcode (bits 0-3)
-    orr r10, r10, r12            @ Adicionamos ao registrador de instrução
-
-    str r10, [r11]               @ Escrevemos a instrução na FPGA
-
+    @ Primeira instrução (num1 e num2)
+    mov r10, #0x10000000         @ Bit 28 = 1
+    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
+    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
+    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
+    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
+    orr r10, r10, r12            @ Mat. Siz + Opcode
+    str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
-    mov r10, #0                  @ Limpamos o registrador r10
-    orr r10, r10, #0x10000000    @ Setamos o bit 28 para 1
-
-    @ Configuramos num3 (bits 20-27)
-    lsl r8, r8, #20              @ Deslocamos num3 para a posição correta
-    orr r10, r10, r8             @ Adicionamos ao registrador de instrução
-
-    @ Configuramos num4 (bits 12-19)
-    lsl r9, r9, #12              @ Deslocamos num4 para a posição correta
-    orr r10, r10, r9             @ Adicionamos ao registrador de instrução
-
-    @ Configuramos position (bits 7-11)
-    lsl r5, r5, #7               @ Deslocamos position para a posição correta
-    orr r10, r10, r5             @ Adicionamos ao registrador de instrução
-
-    @ Configuramos Mat Targ (bit 6)
-    lsl r3, r3, #6               @ Deslocamos Mat Targ para a posição correta
-    orr r10, r10, r3             @ Adicionamos ao registrador de instrução
-
-    @ Configuramos Mat. Siz (bits 4-5) e Opcode (bits 0-3)
-    orr r10, r10, r12            @ Adicionamos ao registrador de instrução
-
-    str r10, [r11]               @ Escrevemos a instrução na FPGA
-
+    @ Segunda instrução (num3 e num4)
+    mov r10, #0x10000000         @ Bit 28 = 1
+    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
+    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
+    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
+    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
+    orr r10, r10, r12            @ Mat. Siz + Opcode
+    str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
     pop {lr}
