@@ -1140,68 +1140,139 @@ store3x3:
     str r10, [r11]              
     bl wait_for_done
 
-    ldr r1, [r11, #0x10]         @ Carrega os 4 bytes do offset 0x10
+    ldr r1, [r11, #0x10]         
 
-    strb r1, [r0, #0]            @ Armazena byte 0 na posição 0
-    lsr r1, r1, #8               @ Desloca para pegar o próximo byte
+    strb r1, [r0, #0]            
+    lsr r1, r1, #8               
 
-    strb r1, [r0, #1]            @ Armazena byte 1 na posição 1
-    lsr r1, r1, #8               @ Desloca para pegar o próximo byte
+    strb r1, [r0, #1]            
+    lsr r1, r1, #8               
 
-    strb r1, [r0, #2]            @ Armazena byte 2 na posição 2
-    lsr r1, r1, #8               @ Desloca para pegar o último byte
+    strb r1, [r0, #2]            
+    lsr r1, r1, #8               
 
-    strb r1, [r0, #3]            @ Armazena byte 3 na posição 3
+    strb r1, [r0, #3]            
 
 
-    mov r5, #6                   @ Position 6
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    str r10, [r11]               @ Envia instrução para FPGA
+    mov r5, #6                   
+    orr r10, r10, r5, lsl #7     
+    str r10, [r11]               
     bl wait_for_done
 
 
-    ldr r1, [r11, #0x10]         @ Carrega os 4 bytes do offset 0x10
+    ldr r1, [r11, #0x10]         
 
-    strb r1, [r0, #4]            @ Armazena byte 0 na posição 4
-    lsr r1, r1, #8               @ Desloca para pegar o próximo byte
+    strb r1, [r0, #4]            
+    lsr r1, r1, #8               
 
-    strb r1, [r0, #5]            @ Armazena byte 1 na posição 5
-    lsr r1, r1, #8               @ Desloca para pegar o próximo byte
+    strb r1, [r0, #5]            
+    lsr r1, r1, #8               
 
-    strb r1, [r0, #6]            @ Armazena byte 2 na posição 6
-    lsr r1, r1, #8               @ Desloca para pegar o último byte
+    strb r1, [r0, #6]            
+    lsr r1, r1, #8               
 
-    strb r1, [r0, #7]            @ Armazena byte 3 na posição 7
+    strb r1, [r0, #7]            
 
 
-    mov r5, #12                  @ Position 12
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    str r10, [r11]               @ Envia instrução para FPGA
+    mov r5, #12                  
+    orr r10, r10, r5, lsl #7     
+    str r10, [r11]               
     bl wait_for_done
 
-    ldr r1, [r11, #0x10]         @ Carrega os 4 bytes do offset 0x10
+    ldr r1, [r11, #0x10]         
 
-    lsr r1, r1, #8               @ Desloca para pegar o próximo byte
-    lsr r1, r1, #8               @ Desloca para pegar o próximo byte
-    lsr r1, r1, #8               @ Desloca para pegar o próximo byte
+    lsr r1, r1, #8               
+    lsr r1, r1, #8               
+    lsr r1, r1, #8               
 
-    strb r1, [r0, #8]            @ Armazena byte 3 na posição 8    
+    strb r1, [r0, #8]            
 
     pop {lr}
     bx lr
 
 store4x4:
-    push {lr}
+    @ 0, 5, 10, 15
+    ldr r11, =mapped_addr        
+    ldr r11, [r11]
+    ldr r0, =matrixR             
+    ldr r0, [r0]
 
-    @ code ...
+    mov r2, #0x8
+    mov r10, #0x10000000         
+    orr r10, r10, r2            
+
+    str r10, [r11]              
+    bl wait_for_done
+
+    ldr r1, [r11, #0x10]        
+
+    strb r1, [r0, #0]              
+    lsr r1, r1, #8               
+    strb r1, [r0, #1]            
+    lsr r1, r1, #8               
+    strb r1, [r0, #2]            
+    lsr r1, r1, #8               
+    strb r1, [r0, #3]       
+
+    mov r5, #5                   
+    orr r10, r10, r5, lsl #7     
+    str r10, [r11]               
+    bl wait_for_done
+
+    ldr r1, [r11, #0x10]         
+
+    strb r1, [r0, #4]            
+    lsr r1, r1, #8               
+
+    strb r1, [r0, #5]            
+    lsr r1, r1, #8               
+
+    strb r1, [r0, #6]            
+    lsr r1, r1, #8               
+
+    strb r1, [r0, #7]   
+
+    mov r5, #10                   
+    orr r10, r10, r5, lsl #7     
+    str r10, [r11]               
+    bl wait_for_done
+
+    ldr r1, [r11, #0x10]         
+
+    strb r1, [r0, #8]            
+    lsr r1, r1, #8               
+
+    strb r1, [r0, #9]            
+    lsr r1, r1, #8               
+
+    strb r1, [r0, #10]            
+    lsr r1, r1, #8               
+
+    strb r1, [r0, #11]   
+
+    mov r5, #15                  
+    orr r10, r10, r5, lsl #7     
+    str r10, [r11]               
+    bl wait_for_done
+
+    ldr r1, [r11, #0x10]         
+
+    strb r1, [r0, #12]            
+    lsr r1, r1, #8               
+
+    strb r1, [r0, #13]            
+    lsr r1, r1, #8               
+
+    strb r1, [r0, #14]            
+    lsr r1, r1, #8               
+
+    strb r1, [r0, #15]  
 
     pop {lr}
     bx lr
 
 store5x5:
-    push {lr}
-
-    @ code ...
+    @ 0, 4, 8, 12, 16, 20, 24,
 
     pop {lr}
     bx lr
