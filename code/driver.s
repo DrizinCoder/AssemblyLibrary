@@ -1134,9 +1134,11 @@ store3x3:
     ldr r0, =matrixR             
     ldr r0, [r0]
 
+    mov r5, #0                   
     mov r2, #0x8
     mov r10, #0x10000000         
     orr r10, r10, r2            
+    orr r10, r10, r5, lsl #7 
     str r10, [r11]              
     bl wait_for_done
 
@@ -1153,12 +1155,13 @@ store3x3:
 
     strb r1, [r0, #3]            
 
-
     mov r5, #6                   
-    orr r10, r10, r5, lsl #7     
-    str r10, [r11]               
+    mov r2, #0x8
+    mov r10, #0x10000000         
+    orr r10, r10, r2            
+    orr r10, r10, r5, lsl #7 
+    str r10, [r11]              
     bl wait_for_done
-
 
     ldr r1, [r11, #0x10]         
 
@@ -1173,10 +1176,12 @@ store3x3:
 
     strb r1, [r0, #7]            
 
-
-    mov r5, #12                  
-    orr r10, r10, r5, lsl #7     
-    str r10, [r11]               
+    mov r5, #12                   
+    mov r2, #0x8
+    mov r10, #0x10000000         
+    orr r10, r10, r2            
+    orr r10, r10, r5, lsl #7 
+    str r10, [r11]              
     bl wait_for_done
 
     ldr r1, [r11, #0x10]         
