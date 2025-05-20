@@ -533,8 +533,10 @@ load4x4:
 
 load5x5:
     ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
+    ldr r11, [r11]
 
     ldr r0, =matrixA             @ Ponteiro para matrixA
+    ldr r0, [r0]
 
     @ Enviando (num1, num2, num3 e num4)
     ldrsb r6, [r0, #0]           @ num1 = matrixA[0] 
@@ -733,6 +735,7 @@ load5x5:
 
 
     ldr r0, =matrixB             @ Ponteiro para matrixA
+    ldr r0, [r0]
 
     @ Enviando (num1, num2, num3 e num4)
     ldrsb r6, [r0, #0]           @ num1 = matrixB[0] 
