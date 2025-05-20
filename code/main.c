@@ -5,9 +5,8 @@
 #include <unistd.h>
 #include <stdint.h>
 
-extern int *mmap_setup();
-extern void driver(int8_t *matrixA, int8_t *matrixB, int8_t *matrixR, int size, int op_opcode, int *mapped_addr);
-extern void mmap_cleanup(int *mapped_addr);
+extern void mmap_setup();
+extern void driver(int8_t *matrixA, int8_t *matrixB, int8_t *matrixR, int size, int op_opcode);
 
 void operations();
 int size_mask(int value);
@@ -15,16 +14,9 @@ void freePtr(int8_t *a, int8_t *b, int8_t *c);
 void read_matrix(int8_t *matrix, int size, const char *name);
 void print_matrix(int8_t *matrix, int size, const char *name);
 
-int *addr;
-
 int main()
 {
-  addr = mmap_setup();
-
-  if (addr == NULL)
-  {
-    return -1;
-  }
+  mmap_setup();
 
   int start = 1;
   printf("Welcome to matrix calculator drive!\n");
@@ -52,8 +44,6 @@ int main()
     }
   }
 
-  mmap_cleanup(addr);
-
   return 0;
 }
 
@@ -77,7 +67,7 @@ void operations()
   {
     read_matrix(matrixA, size, "A");
     read_matrix(matrixB, size, "B");
-    driver(matrixA, matrixB, matrixR, size_mask(size), operation, addr);
+    driver(matrixA, matrixB, matrixR, size_mask(size), operation);
     print_matrix(matrixR, size, "Resultado");
     freePtr(matrixA, matrixB, matrixR);
   }
@@ -85,7 +75,7 @@ void operations()
   {
     read_matrix(matrixA, size, "A");
     read_matrix(matrixB, size, "B");
-    driver(matrixA, matrixB, matrixR, size_mask(size), operation, addr);
+    driver(matrixA, matrixB, matrixR, size_mask(size), operation);
     print_matrix(matrixR, size, "Resultado");
     freePtr(matrixA, matrixB, matrixR);
   }
@@ -93,21 +83,21 @@ void operations()
   {
     read_matrix(matrixA, size, "A");
     read_matrix(matrixB, size, "B");
-    driver(matrixA, matrixB, matrixR, size_mask(size), operation, addr);
+    driver(matrixA, matrixB, matrixR, size_mask(size), operation);
     print_matrix(matrixR, size, "Resultado");
     freePtr(matrixA, matrixB, matrixR);
   }
   else if (operation == 4)
   {
     read_matrix(matrixA, size, "A");
-    driver(matrixA, matrixB, matrixR, size_mask(size), operation, addr);
+    driver(matrixA, matrixB, matrixR, size_mask(size), operation);
     print_matrix(matrixR, size, "Resultado");
     freePtr(matrixA, matrixB, matrixR);
   }
   else if (operation == 5)
   {
     read_matrix(matrixA, size, "A");
-    driver(matrixA, matrixB, matrixR, size_mask(size), operation, addr);
+    driver(matrixA, matrixB, matrixR, size_mask(size), operation);
     print_matrix(matrixR, size, "Resultado");
     freePtr(matrixA, matrixB, matrixR);
   }
@@ -120,35 +110,35 @@ void operations()
     scanf("%d", &scalar);
     matrixB[0] = scalar;
 
-    driver(matrixA, matrixB, matrixR, size_mask(size), operation, addr);
+    driver(matrixA, matrixB, matrixR, size_mask(size), operation);
     print_matrix(matrixR, size, "Resultado");
     freePtr(matrixA, matrixB, matrixR);
   }
   else if (operation == 7)
   {
     read_matrix(matrixA, size, "A");
-    driver(matrixA, matrixB, matrixR, size_mask(size), operation, addr);
+    driver(matrixA, matrixB, matrixR, size_mask(size), operation);
     print_matrix(matrixR, size, "Resultado");
     freePtr(matrixA, matrixB, matrixR);
   }
   else if (operation == 8)
   {
     read_matrix(matrixA, size, "A");
-    driver(matrixA, matrixB, matrixR, size_mask(size), operation, addr);
+    driver(matrixA, matrixB, matrixR, size_mask(size), operation);
     print_matrix(matrixR, size, "Resultado");
     freePtr(matrixA, matrixB, matrixR);
   }
   else if (operation == 9)
   {
     read_matrix(matrixA, size, "A");
-    driver(matrixA, matrixB, matrixR, size_mask(size), operation, addr);
+    driver(matrixA, matrixB, matrixR, size_mask(size), operation);
     print_matrix(matrixR, size, "Resultado");
     freePtr(matrixA, matrixB, matrixR);
   }
   else if (operation == 0)
   {
     read_matrix(matrixA, size, "A");
-    driver(matrixA, matrixB, matrixR, size_mask(size), operation, addr);
+    driver(matrixA, matrixB, matrixR, size_mask(size), operation);
     print_matrix(matrixR, size, "Resultado");
     freePtr(matrixA, matrixB, matrixR);
   }
