@@ -142,8 +142,10 @@ load2x2:
 
 load3x3:
     ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
+    ldr r11, [r11]
 
     ldr r0, =matrixA             @ Ponteiro para matrixA
+    ldr r0, [r0]
     ldrsb r6, [r0, #0]           @ num1 = matrixA[0] 
     ldrsb r7, [r0, #1]           @ num2 = matrixA[1]
     ldrsb r8, [r0, #2]           @ num3 = matrixA[2]
@@ -220,6 +222,7 @@ load3x3:
     bl wait_for_done
 
     ldr r0, =matrixB             @ Ponteiro para matrixA
+    ldr r0, [r0]
     ldrsb r6, [r0, #0]           @ num1 = matrixA[0] 
     ldrsb r7, [r0, #1]           @ num2 = matrixA[1]
     ldrsb r8, [r0, #2]           @ num3 = matrixA[2]
@@ -1281,4 +1284,3 @@ fail_mmap:
     mov r0, #-1
 
     bx lr
-
