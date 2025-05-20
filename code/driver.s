@@ -1181,7 +1181,11 @@ store3x3:
 
     ldr r1, [r11, #0x10]         @ Carrega os 4 bytes do offset 0x10
 
-    strb r1, [r0, #8]            @ Armazena byte 0 na posição 4    
+    lsr r1, r1, #8               @ Desloca para pegar o próximo byte
+    lsr r1, r1, #8               @ Desloca para pegar o próximo byte
+    lsr r1, r1, #8               @ Desloca para pegar o próximo byte
+
+    strb r1, [r0, #8]            @ Armazena byte 3 na posição 8    
 
     pop {lr}
     bx lr
