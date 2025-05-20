@@ -1,6 +1,9 @@
 .global driver
 .type driver, %function
 
+.global mmap_setup
+.type mmap_setup, %function
+
 .section .data
     mapped_addr:    .word 0  @ Stores the mapped address
 
@@ -10,6 +13,9 @@
     matrix_size:    .word 0
     opcode:         .word 0
     
+    file_descriptor: .word 0
+    dev_mem:        .asciz "/dev/mem"
+
 
     welcome_msg: .ascii "\nWelcome to Driver\n"
     welcome_msg_len = . - welcome_msg
@@ -32,12 +38,7 @@ driver:
     ldr r5, =opcode
     str r4, [r5]
 
-    ldr r4, [sp, #28]
-    ldr r6, =mapped_addr     @ Endereço
-    str r4, [r6]
-
     @ bl mmap_setup
-    bl welcome
     bl load
     bl operation
     bl store
@@ -47,7 +48,7 @@ driver:
     bx lr
 
 load:
-    push {lr}
+    push {r1-r12, lr}
 
     ldr r0, =matrix_size
     ldr r0, [r0]
@@ -64,15 +65,16 @@ load:
     cmp r0, #3
     beq load5x5
 
-    pop {lr}
+    pop {r1-r12, lr}
     bx lr
 
 load2x2:
-    push {lr}
 
     ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
+    ldr r11, [r11, #0x0]
 
     ldr r0, =matrixA             @ Ponteiro para matrixA
+    ldr r0, [r0]
     ldrsb r6, [r0, #0]           @ num1 = matrixA[0] (com extensão de sinal)
     ldrsb r7, [r0, #1]           @ num2 = matrixA[1]
     ldrsb r8, [r0, #2]           @ num3 = matrixA[2]
@@ -105,6 +107,7 @@ load2x2:
     bl wait_for_done
 
     ldr r0, =matrixB             @ Ponteiro para matrixB
+    ldr r0, [r0]
     ldrsb r6, [r0, #0]           @ num1 = matrixB[0]
     ldrsb r7, [r0, #1]           @ num2 = matrixB[1]
     ldrsb r8, [r0, #2]           @ num3 = matrixB[2]
@@ -135,7 +138,7 @@ load2x2:
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
-    pop {lr}
+    pop {r1-r12, lr}
     bx lr
 
 load3x3:
@@ -928,7 +931,7 @@ load5x5:
     bx lr
 
 operation:
-    push {lr}
+    push {r0, lr}
 
     ldr r0, =opcode
     ldrsb r0, [r0]
@@ -954,11 +957,10 @@ operation:
     cmp r0, #0x7
     beq det
 
-    pop {lr}
+    pop {r0, lr}
     bx lr
 
 sum:
-    push {lr}
     
     mov r1, #0x1
     mov r3, #0x10000000
@@ -971,11 +973,10 @@ sum:
 
     bl wait_for_done 
 
-    pop {lr}
+    pop {r0, lr}
     bx lr
 
 subtract:
-    push {lr}
 
     mov r1, #0x2
     mov r3, #0x10000000
@@ -988,11 +989,10 @@ subtract:
 
     bl wait_for_done 
 
-    pop {lr}
+    pop {r0, lr}
     bx lr
 
 multiplication:
-    push {lr}
 
     mov r1, #0x3
     mov r3, #0x10000000
@@ -1005,11 +1005,10 @@ multiplication:
 
     bl wait_for_done 
 
-    pop {lr}
+    pop {r0, lr}
     bx lr
 
 ops:
-    push {lr}
 
     mov r1, #0x4
     mov r3, #0x10000000
@@ -1022,11 +1021,10 @@ ops:
 
     bl wait_for_done 
 
-    pop {lr}
+    pop {r0, lr}
     bx lr
 
 tps:
-    push {lr}
 
     mov r1, #0x5
     mov r3, #0x10000000
@@ -1039,11 +1037,10 @@ tps:
 
     bl wait_for_done 
 
-    pop {lr}
+    pop {r0, lr}
     bx lr
 
 mui:
-    push {lr}
     
     mov r1, #0x6
     mov r3, #0x10000000
@@ -1056,11 +1053,10 @@ mui:
 
     bl wait_for_done 
 
-    pop {lr}
+    pop {r0, lr}
     bx lr
 
 det:
-    push {lr}
 
     mov r1, #0x7
     mov r3, #0x10000000
@@ -1078,7 +1074,7 @@ det:
 
     bl wait_for_done 
 
-    pop {lr}
+    pop {r0, lr}
     bx lr
 
 
@@ -1104,14 +1100,15 @@ store:
     bx lr
 
 store2x2:
-    push {lr}
 
     ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
+    ldr r11, [r11]
     ldr r0, =matrixR             @ Ponteiro para matrixR
+    ldr r0, [r0]
 
     mov r2, #0x8
     mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r2            @ Opcode (0000)
+    orr r10, r10, r2            @ Opcode (1000)
 
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
@@ -1164,31 +1161,81 @@ welcome:
 
 @ Aqui pode está errado!!!
 wait_for_done:
-    push {r0-r3, lr}             @ Preserva o registrador de retorno
+    push {r0-r11, lr}             @ Preserva o registrador de retorno
 
     ldr r0, =mapped_addr         @ Carrega o endereço base
-    add r0, r0, #0x30            @ Adiciona offset 0x30
+    ldr r0, [r0]
 
 wait_loop:
-    ldr r1, [r0]                 @ Carrega o valor do registrador
+    ldr r1, [r0, #0x30]                 @ Carrega o valor do registrador
 
     and r2, r1, #0x08            @ Isola o bit 3 (4º bit)
     cmp r2, #0x08                @ Compara com 0x08
-    beq done_ready               @ Se igual, sair do loop
+    beq restart               @ Se igual, sair do loop
 
     b wait_loop                  @ Volta para o início do loop
-
-done_ready:
-    bl restart
-
-    pop {r0-r3, lr}              @ Restaura o registrador de retorno
-    bx lr                        @ Retorna da função
 
 restart:
     @  enviar restart
     mov r3, #0x00000000    
 
     ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
-    str r10, [r11]               @ Envia para FPGA
+    ldr r11, [r11]
+    str r3, [r11, #0x0]               @ Envia para FPGA
+
+    pop {r0-r11, lr}
 
     bx lr
+
+@ -----------------------------------------------------------------------------------------------
+
+mmap_setup:
+    push {r0-r7, lr}
+    
+    @ Open /dev/mem
+    ldr r0, =dev_mem
+    mov r1, #2          @ O_RDWR
+    mov r7, #5          @ syscall open
+    svc #0
+    
+    cmp r0, #0
+    blt fail_open
+    
+    ldr r1, =file_descriptor
+    str r0, [r1]
+    
+    mov r0, #0          
+    ldr r1, =0x1000     
+    mov r2, #3          
+    mov r3, #1          
+    ldr r4, =file_descriptor
+    ldr r4, [r4]        
+    ldr r5, =0xFF200    
+    mov r7, #192        
+    svc #0
+    
+    cmn r0, #1          
+    beq fail_mmap
+
+    ldr r1, =mapped_addr
+    str r0, [r1]
+    
+    pop {r0-r7, lr}
+    bx lr
+
+fail_open:
+    mov r0, #-1
+
+    bx lr
+
+fail_mmap:
+    @ Close file if mmap failed
+    ldr r0, =file_descriptor
+    ldr r0, [r0]
+    mov r7, #6          @ syscall close
+    svc #0
+    
+    mov r0, #-1
+
+    bx lr
+
