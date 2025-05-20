@@ -299,8 +299,6 @@ load3x3:
     bx lr
 
 load4x4:
-    push {lr}
-
     ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
 
     ldr r0, =matrixA             @ Ponteiro para matrixA
@@ -524,12 +522,10 @@ load4x4:
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
-    pop {lr}
+    pop {r1-r12, lr}
     bx lr
 
 load5x5:
-    push {lr}
-
     ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
 
     ldr r0, =matrixA             @ Ponteiro para matrixA
@@ -924,7 +920,7 @@ load5x5:
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
   
-    pop {lr}
+    pop {r1-r12, lr}
     bx lr
 
 operation:
