@@ -1100,7 +1100,6 @@ store:
     bx lr
 
 store2x2:
-
     ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
     ldr r11, [r11]
     ldr r0, =matrixR             @ Ponteiro para matrixR
@@ -1127,9 +1126,60 @@ store2x2:
     bx lr
 
 store3x3:
-    push {lr}
+    @ 0, 6, 12  
+    ldr r11, =mapped_addr        
+    ldr r11, [r11]
+    ldr r0, =matrixR             
+    ldr r0, [r0]
 
-    @ code ...
+    mov r2, #0x8
+    mov r10, #0x10000000         
+    orr r10, r10, r2            
+    str r10, [r11]              
+    bl wait_for_done
+
+    ldr r1, [r11, #0x10]         @ Carrega os 4 bytes do offset 0x10
+
+    strb r1, [r0, #0]            @ Armazena byte 0 na posição 0
+    lsr r1, r1, #8               @ Desloca para pegar o próximo byte
+
+    strb r1, [r0, #1]            @ Armazena byte 1 na posição 1
+    lsr r1, r1, #8               @ Desloca para pegar o próximo byte
+
+    strb r1, [r0, #2]            @ Armazena byte 2 na posição 2
+    lsr r1, r1, #8               @ Desloca para pegar o último byte
+
+    strb r1, [r0, #3]            @ Armazena byte 3 na posição 3
+
+
+    mov r5, #6                   @ Position 6
+    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
+    str r10, [r11]               @ Envia instrução para FPGA
+    bl wait_for_done
+
+
+    ldr r1, [r11, #0x10]         @ Carrega os 4 bytes do offset 0x10
+
+    strb r1, [r0, #4]            @ Armazena byte 0 na posição 4
+    lsr r1, r1, #8               @ Desloca para pegar o próximo byte
+
+    strb r1, [r0, #5]            @ Armazena byte 1 na posição 5
+    lsr r1, r1, #8               @ Desloca para pegar o próximo byte
+
+    strb r1, [r0, #6]            @ Armazena byte 2 na posição 6
+    lsr r1, r1, #8               @ Desloca para pegar o último byte
+
+    strb r1, [r0, #7]            @ Armazena byte 3 na posição 7
+
+
+    mov r5, #12                  @ Position 12
+    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
+    str r10, [r11]               @ Envia instrução para FPGA
+    bl wait_for_done
+
+    ldr r1, [r11, #0x10]         @ Carrega os 4 bytes do offset 0x10
+
+    strb r1, [r0, #8]            @ Armazena byte 0 na posição 4    
 
     pop {lr}
     bx lr
