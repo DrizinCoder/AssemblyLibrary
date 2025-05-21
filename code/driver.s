@@ -91,7 +91,7 @@ load2x2:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -143,17 +143,18 @@ load2x2:
 load3x3:
     ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
     ldr r11, [r11]
-
     ldr r0, =matrixA             @ Ponteiro para matrixA
     ldr r0, [r0]
+
     ldrsb r6, [r0, #0]           @ num1 = matrixA[0] 
     ldrsb r7, [r0, #1]           @ num2 = matrixA[1]
     ldrsb r8, [r0, #2]           @ num3 = matrixA[2]
     ldrsb r9, [r0, #3]           @ num4 = matrixA[3]
     
     mov r3, #0                   @ Mat Targ = 0 (matriz A)
+
     mov r4, #0                   @ Position = 0
-    mov r5, #2                   @ Position = 5
+    mov r5, #2                   @ Position = 2
     mov r12, #0x10               @ Mat. Siz = 01 (3x3), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
   
@@ -163,7 +164,7 @@ load3x3:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -182,7 +183,6 @@ load3x3:
     ldrsb r8, [r0, #6]           @ num7 = matrixA[6]
     ldrsb r9, [r0, #7]           @ num8 = matrixA[7]
 
-    mov r3, #0                   @ Mat Targ = 0 (matriz A)
     mov r4, #6                   @ Position = 6
     mov r5, #10                  @ Position = 10
 
@@ -192,7 +192,7 @@ load3x3:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -206,10 +206,10 @@ load3x3:
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
-    mov r3, #0                   @ Mat Targ = 0 (matriz A)
     mov r4, #12                  @ Position = 12
+
     ldrsb r6, [r0, #8]           @ num9 = matrixA[8] 
-    mov r7, #0                   @ zero - valor para ir junto com num9
+    mov r7, #0                   @ num10 = zero
     
     @ Quinta instrução (num9 e zero)
     mov r10, #0x10000000         @ Bit 28 = 1
@@ -217,20 +217,22 @@ load3x3:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
-    ldr r0, =matrixB             @ Ponteiro para matrixA
+    ldr r0, =matrixB             @ Ponteiro para matrixB
     ldr r0, [r0]
+
     ldrsb r6, [r0, #0]           @ num1 = matrixB[0] 
     ldrsb r7, [r0, #1]           @ num2 = matrixB[1]
     ldrsb r8, [r0, #2]           @ num3 = matrixB[2]
     ldrsb r9, [r0, #3]           @ num4 = matrixB[3]
     
     mov r3, #1                   @ Mat Targ = 0 (matriz A)
+
     mov r4, #0                   @ Position = 0
-    mov r5, #2                   @ Position = 5
+    mov r5, #2                   @ Position = 2
     mov r12, #0x10               @ Mat. Siz = 01 (3x3), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
   
@@ -240,7 +242,7 @@ load3x3:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -254,12 +256,11 @@ load3x3:
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
-    ldrsb r6, [r0, #4]           @ num5 = matrixA[4] 
-    ldrsb r7, [r0, #5]           @ num6 = matrixA[5]
-    ldrsb r8, [r0, #6]           @ num7 = matrixA[6]
-    ldrsb r9, [r0, #7]           @ num8 = matrixA[7]
+    ldrsb r6, [r0, #4]           @ num5 = matrixB[4] 
+    ldrsb r7, [r0, #5]           @ num6 = matrixB[5]
+    ldrsb r8, [r0, #6]           @ num7 = matrixB[6]
+    ldrsb r9, [r0, #7]           @ num8 = matrixB[7]
 
-    mov r3, #1                   @ Mat Targ = 0 (matriz A)
     mov r4, #6                   @ Position = 6
     mov r5, #10                  @ Position = 10
 
@@ -269,7 +270,7 @@ load3x3:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -283,18 +284,18 @@ load3x3:
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
-    mov r3, #1                   @ Mat Targ = 0 (matriz A)
     mov r4, #12                  @ Position = 12
-    ldrsb r6, [r0, #8]           @ num9 = matrixA[8] 
-    mov r7, #0                   @ zero - valor para ir junto com num9
+
+    ldrsb r6, [r0, #8]           @ num9 = matrixB[8] 
+    mov r7, #0                   @ num10 = zero
     
     @ Quinta instrução (num9 e zero)
     mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
+    orr r10, r10, r6, lsl #20    @ num9 (bits 20-27)
+    orr r10, r10, r7, lsl #12    @ num10 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -304,7 +305,6 @@ load3x3:
 load4x4:
     ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
     ldr r11, [r11]
-
     ldr r0, =matrixA             @ Ponteiro para matrixA
     ldr r0, [r0]
 
@@ -315,6 +315,7 @@ load4x4:
     ldrsb r9, [r0, #3]           @ num4 = matrixA[3]
     
     mov r3, #0                   @ Mat Targ = 0 (matriz A)
+
     mov r4, #0                   @ Position = 0
     mov r5, #2                   @ Position = 2
     mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
@@ -325,7 +326,7 @@ load4x4:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -344,8 +345,8 @@ load4x4:
     ldrsb r8, [r0, #6]           @ num7 = matrixA[6]
     ldrsb r9, [r0, #7]           @ num8 = matrixA[7]
     
-    mov r4, #4                   @ Position = 0
-    mov r5, #6                   @ Position = 2
+    mov r4, #5                   @ Position = 5
+    mov r5, #7                   @ Position = 7
     mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
@@ -354,7 +355,7 @@ load4x4:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -373,8 +374,8 @@ load4x4:
     ldrsb r8, [r0, #10]          @ num11 = matrixA[10]
     ldrsb r9, [r0, #11]          @ num12 = matrixA[11]
     
-    mov r4, #8                   @ Position = 0
-    mov r5, #10                  @ Position = 2
+    mov r4, #10                  @ Position = 10
+    mov r5, #12                  @ Position = 12
     mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
@@ -383,7 +384,7 @@ load4x4:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -402,8 +403,8 @@ load4x4:
     ldrsb r8, [r0, #14]          @ num15 = matrixA[14]
     ldrsb r9, [r0, #15]          @ num16 = matrixA[15]
     
-    mov r4, #12                  @ Position = 0
-    mov r5, #14                  @ Position = 2
+    mov r4, #15                  @ Position = 15
+    mov r5, #17                  @ Position = 17
     mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
@@ -412,10 +413,18 @@ load4x4:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
+    mov r10, #0x10000000         @ Bit 28 = 1
+    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
+    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
+    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
+    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
+    orr r10, r10, r12            @ Mat. Siz + Opcode
+    str r10, [r11]               @ Envia para FPGA
+    bl wait_for_done     
 
     ldr r0, =matrixB             @ Ponteiro para matrixB
     ldr r0, [r0]
@@ -427,6 +436,7 @@ load4x4:
     ldrsb r9, [r0, #3]           @ num4 = matrixB[3]
     
     mov r3, #1                   @ Mat Targ = 0 (matriz A)
+
     mov r4, #0                   @ Position = 0
     mov r5, #2                   @ Position = 2
     mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
@@ -437,7 +447,7 @@ load4x4:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -456,8 +466,8 @@ load4x4:
     ldrsb r8, [r0, #6]           @ num7 = matrixB[6]
     ldrsb r9, [r0, #7]           @ num8 = matrixB[7]
     
-    mov r4, #4                   @ Position = 0
-    mov r5, #6                   @ Position = 2
+    mov r4, #5                   @ Position = 5
+    mov r5, #7                   @ Position = 7
     mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
@@ -466,7 +476,7 @@ load4x4:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -485,8 +495,8 @@ load4x4:
     ldrsb r8, [r0, #10]          @ num11 = matrixB[10]
     ldrsb r9, [r0, #11]          @ num12 = matrixB[11]
     
-    mov r4, #8                   @ Position = 0
-    mov r5, #10                  @ Position = 2
+    mov r4, #10                  @ Position = 10
+    mov r5, #12                  @ Position = 12
     mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
@@ -495,7 +505,7 @@ load4x4:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -514,8 +524,8 @@ load4x4:
     ldrsb r8, [r0, #14]          @ num15 = matrixB[14]
     ldrsb r9, [r0, #15]          @ num16 = matrixB[15]
     
-    mov r4, #12                  @ Position = 0
-    mov r5, #14                  @ Position = 2
+    mov r4, #15                  @ Position = 15
+    mov r5, #17                  @ Position = 17
     mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
@@ -524,9 +534,18 @@ load4x4:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
+
+    mov r10, #0x10000000         @ Bit 28 = 1
+    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
+    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
+    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
+    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
+    orr r10, r10, r12            @ Mat. Siz + Opcode
+    str r10, [r11]               @ Envia para FPGA
+    bl wait_for_done   
 
     pop {r1-r12, lr}
     bx lr
@@ -534,7 +553,6 @@ load4x4:
 load5x5:
     ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
     ldr r11, [r11]
-
     ldr r0, =matrixA             @ Ponteiro para matrixA
     ldr r0, [r0]
 
@@ -545,6 +563,7 @@ load5x5:
     ldrsb r9, [r0, #3]           @ num4 = matrixA[3]
     
     mov r3, #0                   @ Mat Targ = 0 (matriz A)
+
     mov r4, #0                   @ Position = 0
     mov r5, #2                   @ Position = 2
     mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
@@ -555,7 +574,7 @@ load5x5:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -574,8 +593,8 @@ load5x5:
     ldrsb r8, [r0, #6]           @ num7 = matrixA[6]
     ldrsb r9, [r0, #7]           @ num8 = matrixA[7]
     
-    mov r4, #4                   @ Position = 0
-    mov r5, #6                   @ Position = 2
+    mov r4, #4                   @ Position = 4
+    mov r5, #6                   @ Position = 6
     mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
@@ -584,7 +603,7 @@ load5x5:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -603,8 +622,8 @@ load5x5:
     ldrsb r8, [r0, #10]          @ num11 = matrixA[10]
     ldrsb r9, [r0, #11]          @ num12 = matrixA[11]
     
-    mov r4, #8                   @ Position = 0
-    mov r5, #10                  @ Position = 2
+    mov r4, #8                   @ Position = 8
+    mov r5, #10                  @ Position = 10
     mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
@@ -613,7 +632,7 @@ load5x5:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -632,8 +651,8 @@ load5x5:
     ldrsb r8, [r0, #14]          @ num15 = matrixA[14]
     ldrsb r9, [r0, #15]          @ num16 = matrixA[15]
     
-    mov r4, #12                  @ Position = 0
-    mov r5, #14                  @ Position = 2
+    mov r4, #12                  @ Position = 12
+    mov r5, #14                  @ Position = 14
     mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
@@ -642,7 +661,7 @@ load5x5:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -661,8 +680,8 @@ load5x5:
     ldrsb r8, [r0, #18]          @ num19 = matrixA[18]
     ldrsb r9, [r0, #19]          @ num20 = matrixA[19]
     
-    mov r4, #16                  @ Position = 0
-    mov r5, #18                  @ Position = 2
+    mov r4, #16                  @ Position = 16
+    mov r5, #18                  @ Position = 18
     mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
@@ -671,7 +690,7 @@ load5x5:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -690,8 +709,8 @@ load5x5:
     ldrsb r8, [r0, #22]          @ num23 = matrixA[22]
     ldrsb r9, [r0, #23]          @ num24 = matrixA[23]
     
-    mov r4, #20                  @ Position = 0
-    mov r5, #22                  @ Position = 2
+    mov r4, #20                  @ Position = 20
+    mov r5, #22                  @ Position = 22
     mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
@@ -700,7 +719,7 @@ load5x5:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -717,7 +736,7 @@ load5x5:
     ldrsb r6, [r0, #20]          @ num21 = matrixA[20] 
     mov r7, #0                   @ num22 = matrixA[21]
 
-    mov r4, #20                  @ Position = 0
+    mov r4, #24                  @ Position = 24
     mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
@@ -726,13 +745,13 @@ load5x5:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
     @ Enviando matriz B
 
-    ldr r0, =matrixB             @ Ponteiro para matrixA
+    ldr r0, =matrixB             @ Ponteiro para matrixB
     ldr r0, [r0]
 
     @ Enviando (num1, num2, num3 e num4)
@@ -742,6 +761,7 @@ load5x5:
     ldrsb r9, [r0, #3]           @ num4 = matrixB[3]
     
     mov r3, #1                   @ Mat Targ = 0 (matriz B)
+
     mov r4, #0                   @ Position = 0
     mov r5, #2                   @ Position = 2
     mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
@@ -752,7 +772,7 @@ load5x5:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -781,7 +801,7 @@ load5x5:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -810,7 +830,7 @@ load5x5:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -839,7 +859,7 @@ load5x5:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -868,7 +888,7 @@ load5x5:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -897,7 +917,7 @@ load5x5:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
@@ -911,8 +931,8 @@ load5x5:
     bl wait_for_done  
 
     @ Enviando (num25 e zero)
-    ldrsb r6, [r0, #20]          @ num21 = matrixB[20] 
-    mov r7, #0                   @ num22 = matrixB[21]
+    ldrsb r6, [r0, #24]          @ num21 = matrixB[24] 
+    mov r7, #0                   @ num22 = matrixB[25]
 
     mov r4, #20                  @ Position = 0
     mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
@@ -923,7 +943,7 @@ load5x5:
     orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
     orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
     orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Agora só os bits 0-5 de r12 são adicionados
+    orr r10, r10, r12            @ Mat. Siz + Opcode
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
   
@@ -961,7 +981,6 @@ operation:
     bx lr
 
 sum:
-    
     mov r1, #0x1
     mov r3, #0x10000000
     orr r3, r3, r1
@@ -1133,11 +1152,14 @@ store3x3:
     ldr r0, =matrixR             
     ldr r0, [r0]
 
+    mov r4, #1                   @ Tamanho
+
     mov r5, #0                   @ Posição 
     mov r2, #0x8
     mov r10, #0x10000000         
     orr r10, r10, r2            
     orr r10, r10, r5, lsl #7 
+    orr r10, r10, r4, lsl #4 
     str r10, [r11]              
     bl wait_for_done
 
@@ -1153,11 +1175,12 @@ store3x3:
     lsr r1, r1, #8               
     strb r1, [r0, #3]            
 
-    mov r5, #6                   @ Posição 
+    mov r5, #6                   @ Posição
     mov r2, #0x8
     mov r10, #0x10000000         
     orr r10, r10, r2            
     orr r10, r10, r5, lsl #7 
+    orr r10, r10, r4, lsl #4 
     str r10, [r11]              
     bl wait_for_done
 
@@ -1178,6 +1201,7 @@ store3x3:
     mov r10, #0x10000000         
     orr r10, r10, r2            
     orr r10, r10, r5, lsl #7 
+    orr r10, r10, r4, lsl #4 
     str r10, [r11]              
     bl wait_for_done
 
@@ -1199,11 +1223,14 @@ store4x4:
     ldr r0, =matrixR             
     ldr r0, [r0]
 
+    mov r4, #2                   @ Tamanho
+
     mov r5, #0                   @ Posição 
     mov r2, #0x8
     mov r10, #0x10000000         
     orr r10, r10, r2            
     orr r10, r10, r5, lsl #7 
+    orr r10, r10, r4, lsl #4 
     str r10, [r11]              
     bl wait_for_done
 
@@ -1222,6 +1249,7 @@ store4x4:
     mov r10, #0x10000000         
     orr r10, r10, r2            
     orr r10, r10, r5, lsl #7 
+    orr r10, r10, r4, lsl #4 
     str r10, [r11]              
     bl wait_for_done
 
@@ -1242,6 +1270,7 @@ store4x4:
     mov r10, #0x10000000         
     orr r10, r10, r2            
     orr r10, r10, r5, lsl #7 
+    orr r10, r10, r4, lsl #4 
     str r10, [r11]              
     bl wait_for_done
 
@@ -1262,6 +1291,7 @@ store4x4:
     mov r10, #0x10000000         
     orr r10, r10, r2            
     orr r10, r10, r5, lsl #7 
+    orr r10, r10, r4, lsl #4 
     str r10, [r11]              
     bl wait_for_done
 
@@ -1280,6 +1310,8 @@ store4x4:
     pop {lr}
     bx lr
 
+LTORG
+
 store5x5:
     @ 0, 4, 8, 12, 16, 20, 24
     ldr r11, =mapped_addr        
@@ -1287,11 +1319,14 @@ store5x5:
     ldr r0, =matrixR             
     ldr r0, [r0]
 
+    mov r4, #3                   @ Tamanho
+
     mov r5, #0                   @ Posição 
     mov r2, #0x8
     mov r10, #0x10000000         
     orr r10, r10, r2            
     orr r10, r10, r5, lsl #7 
+    orr r10, r10, r4, lsl #4 
     str r10, [r11]              
     bl wait_for_done
 
@@ -1309,7 +1344,8 @@ store5x5:
     mov r2, #0x8
     mov r10, #0x10000000         
     orr r10, r10, r2            
-    orr r10, r10, r5, lsl #7 
+    orr r10, r10, r5, lsl #7
+    orr r10, r10, r4, lsl #4  
     str r10, [r11]              
     bl wait_for_done
 
@@ -1330,6 +1366,7 @@ store5x5:
     mov r10, #0x10000000         
     orr r10, r10, r2            
     orr r10, r10, r5, lsl #7 
+    orr r10, r10, r4, lsl #4 
     str r10, [r11]              
     bl wait_for_done
 
@@ -1350,6 +1387,7 @@ store5x5:
     mov r10, #0x10000000         
     orr r10, r10, r2            
     orr r10, r10, r5, lsl #7 
+    orr r10, r10, r4, lsl #4 
     str r10, [r11]              
     bl wait_for_done
 
@@ -1370,6 +1408,7 @@ store5x5:
     mov r10, #0x10000000         
     orr r10, r10, r2            
     orr r10, r10, r5, lsl #7 
+    orr r10, r10, r4, lsl #4 
     str r10, [r11]              
     bl wait_for_done
 
@@ -1390,6 +1429,7 @@ store5x5:
     mov r10, #0x10000000         
     orr r10, r10, r2            
     orr r10, r10, r5, lsl #7 
+    orr r10, r10, r4, lsl #4 
     str r10, [r11]              
     bl wait_for_done
 
@@ -1410,6 +1450,7 @@ store5x5:
     mov r10, #0x10000000         
     orr r10, r10, r2            
     orr r10, r10, r5, lsl #7 
+    orr r10, r10, r4, lsl #4 
     str r10, [r11]              
     bl wait_for_done
 
