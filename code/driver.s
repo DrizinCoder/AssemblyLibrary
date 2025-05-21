@@ -317,7 +317,7 @@ load4x4:
     mov r3, #0                   @ Mat Targ = 0 (matriz A)
     mov r4, #0                   @ Position = 0
     mov r5, #2                   @ Position = 2
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
+    mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
     mov r10, #0x10000000         @ Bit 28 = 1
@@ -346,7 +346,7 @@ load4x4:
     
     mov r4, #4                   @ Position = 0
     mov r5, #6                   @ Position = 2
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
+    mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
     mov r10, #0x10000000         @ Bit 28 = 1
@@ -375,7 +375,7 @@ load4x4:
     
     mov r4, #8                   @ Position = 0
     mov r5, #10                  @ Position = 2
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
+    mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
     mov r10, #0x10000000         @ Bit 28 = 1
@@ -404,7 +404,7 @@ load4x4:
     
     mov r4, #12                  @ Position = 0
     mov r5, #14                  @ Position = 2
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
+    mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
     mov r10, #0x10000000         @ Bit 28 = 1
@@ -426,10 +426,10 @@ load4x4:
     ldrsb r8, [r0, #2]           @ num3 = matrixB[2]
     ldrsb r9, [r0, #3]           @ num4 = matrixB[3]
     
-    mov r3, #0                   @ Mat Targ = 0 (matriz A)
+    mov r3, #1                   @ Mat Targ = 0 (matriz A)
     mov r4, #0                   @ Position = 0
     mov r5, #2                   @ Position = 2
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
+    mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
     mov r10, #0x10000000         @ Bit 28 = 1
@@ -458,7 +458,7 @@ load4x4:
     
     mov r4, #4                   @ Position = 0
     mov r5, #6                   @ Position = 2
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
+    mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
     mov r10, #0x10000000         @ Bit 28 = 1
@@ -487,7 +487,7 @@ load4x4:
     
     mov r4, #8                   @ Position = 0
     mov r5, #10                  @ Position = 2
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
+    mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
     mov r10, #0x10000000         @ Bit 28 = 1
@@ -516,7 +516,7 @@ load4x4:
     
     mov r4, #12                  @ Position = 0
     mov r5, #14                  @ Position = 2
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
+    mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
     and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
 
     mov r10, #0x10000000         @ Bit 28 = 1
@@ -730,9 +730,7 @@ load5x5:
     str r10, [r11]               @ Envia para FPGA
     bl wait_for_done
 
-
     @ Enviando matriz B
-
 
     ldr r0, =matrixB             @ Ponteiro para matrixA
     ldr r0, [r0]
@@ -743,7 +741,7 @@ load5x5:
     ldrsb r8, [r0, #2]           @ num3 = matrixB[2]
     ldrsb r9, [r0, #3]           @ num4 = matrixB[3]
     
-    mov r3, #0                   @ Mat Targ = 0 (matriz A)
+    mov r3, #1                   @ Mat Targ = 0 (matriz B)
     mov r4, #0                   @ Position = 0
     mov r5, #2                   @ Position = 2
     mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
@@ -1422,35 +1420,33 @@ store5x5:
     bx lr
 
 welcome:
-    mov r7, #4        @ syscall write
-    mov r0, #1        @ stdout
+    mov r7, #4                        @ syscall write
+    mov r0, #1                        @ stdout
     ldr r1, =welcome_msg
     mov r2, #welcome_msg_len
     svc #0
 
     bx lr
 
-@ Aqui pode está errado!!!
 wait_for_done:
-    push {r0-r11, lr}             @ Preserva o registrador de retorno
+    push {r0-r11, lr}                 @ Preserva o registrador de retorno
 
-    ldr r0, =mapped_addr         @ Carrega o endereço base
+    ldr r0, =mapped_addr              @ Carrega o endereço base
     ldr r0, [r0]
 
 wait_loop:
-    ldr r1, [r0, #0x30]                 @ Carrega o valor do registrador
+    ldr r1, [r0, #0x30]               @ Carrega o valor do registrador
 
-    and r2, r1, #0x08            @ Isola o bit 3 (4º bit)
-    cmp r2, #0x08                @ Compara com 0x08
-    beq restart               @ Se igual, sair do loop
+    and r2, r1, #0x08                 @ Isola o bit 3 (4º bit)
+    cmp r2, #0x08                     @ Compara com 0x08
+    beq restart                       @ Se igual, sair do loop
 
-    b wait_loop                  @ Volta para o início do loop
+    b wait_loop                       @ Volta para o início do loop
 
 restart:
-    @  enviar restart
     mov r3, #0x00000000    
 
-    ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
+    ldr r11, =mapped_addr             @ Carregamos o endereço da FPGA
     ldr r11, [r11]
     str r3, [r11, #0x0]               @ Envia para FPGA
 
