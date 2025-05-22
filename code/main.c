@@ -50,6 +50,10 @@ void operations() {
   int size = 0;
   printf("1 - Soma\n2 - Subtração\n3 - Multiplicação\n4 - Matriz Oposta\n5 - Transposta\n6 - Multiplicação por escalar\n7 - Determinante \nDigite a operação: ");
   scanf("%d", &operation);
+  if (operation >= 8 || operation <= 0) {
+    printf("\n\nOPERAÇÃO INVÁLIDA!\n\n");
+    return;
+  }
 
   printf("\n\n---Tamanhos---\n2 - Matrix2x2\n3 - Matrix3x3\n4 - Matrix4x4\n5 - Matrix5x5\n");
   printf("Digite o tamanho da matriz: ");
