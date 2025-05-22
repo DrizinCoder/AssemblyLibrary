@@ -69,884 +69,828 @@ load:
     bx lr
 
 load2x2:
-    ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
-    ldr r11, [r11, #0x0]
 
-    ldr r0, =matrixA             @ Ponteiro para matrixA
-    ldr r0, [r0]
-    ldrsb r6, [r0, #0]           @ num1 = matrixA[0] (com extensão de sinal)
-    ldrsb r7, [r0, #1]           @ num2 = matrixA[1]
-    ldrsb r8, [r0, #2]           @ num3 = matrixA[2]
-    ldrsb r9, [r0, #3]           @ num4 = matrixA[3]
+    ldr r7, =matrixA             @ Ponteiro para matrixA
+    ldr r7, [r7]
 
-    mov r3, #0                   @ Mat Targ = 0 (matriz A)
-    mov r4, #0                   @ Position = 0
-    mov r5, #5                   @ Position = 5
-    mov r12, #0                  @ Mat. Siz = 00 (2x2), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
+    push {r0-r3}
 
-    @ Primeira instrução (num1 e num2)
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    ldrsb r0, [r7, #0]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #1]           @ num2 = matrixA[1]
+    mov r2, #0                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#0}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    @ Segunda instrução (num3 e num4)
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    pop {r0-r3}
+    
+    push {r0-r3}
 
-    ldr r0, =matrixB             @ Ponteiro para matrixB
-    ldr r0, [r0]
-    ldrsb r6, [r0, #0]           @ num1 = matrixB[0]
-    ldrsb r7, [r0, #1]           @ num2 = matrixB[1]
-    ldrsb r8, [r0, #2]           @ num3 = matrixB[2]
-    ldrsb r9, [r0, #3]           @ num4 = matrixB[3]
+    ldrsb r0, [r7, #2]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #3]           @ num2 = matrixA[1]
+    mov r2, #5                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#0}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    mov r3, #1                   @ Mat Targ = 1 (matriz B)
-    mov r4, #0                   @ Position = 0
-    mov r5, #5                   @ Position = 5
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
+    pop {r0-r3}
 
-    @ Primeira instrução (num1 e num2)
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    ldr r7, =matrixB             @ Ponteiro para matrixB
+    ldr r7, [r7]
 
-    @ Segunda instrução (num3 e num4)
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    push {r0-r3}
+
+    ldrsb r0, [r7, #0]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #1]           @ num2 = matrixA[1]
+    mov r2, #0                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#0}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+    
+    push {r0-r3}
+
+    ldrsb r0, [r7, #2]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #3]           @ num2 = matrixA[1]
+    mov r2, #5                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#0}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
 
     pop {r1-r12, lr}
     bx lr
 
 load3x3:
-    ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
-    ldr r11, [r11]
-    ldr r0, =matrixA             @ Ponteiro para matrixA
-    ldr r0, [r0]
-
-    ldrsb r6, [r0, #0]           @ num1 = matrixA[0] 
-    ldrsb r7, [r0, #1]           @ num2 = matrixA[1]
-    ldrsb r8, [r0, #2]           @ num3 = matrixA[2]
-    ldrsb r9, [r0, #3]           @ num4 = matrixA[3]
+    ldr r7, =matrixA             @ Ponteiro para matrixA
+    ldr r7, [r7]
     
-    mov r3, #0                   @ Mat Targ = 0 (matriz A)
+    @ Primeira Instrução
+    push {r0-r3}
 
-    mov r4, #0                   @ Position = 0
-    mov r5, #2                   @ Position = 2
-    mov r12, #0x10               @ Mat. Siz = 01 (3x3), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
-  
-    @ Primeira instrução (num1 e num2)
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    ldrsb r0, [r7, #0]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #1]           @ num2 = matrixA[1]
+    mov r2, #0                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#1}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    @ Segunda instrução (num3 e num4)
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    pop {r0-r3}
 
-    ldrsb r6, [r0, #4]           @ num5 = matrixA[4] 
-    ldrsb r7, [r0, #5]           @ num6 = matrixA[5]
-    ldrsb r8, [r0, #6]           @ num7 = matrixA[6]
-    ldrsb r9, [r0, #7]           @ num8 = matrixA[7]
+    @ Segunda Instrução
+    push {r0-r3}
 
-    mov r4, #6                   @ Position = 6
-    mov r5, #10                  @ Position = 10
+    ldrsb r0, [r7, #2]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #3]           @ num2 = matrixA[1]
+    mov r2, #2                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#1}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    @ Terceira instrução (num5 e num6)
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    pop {r0-r3}
 
-    @ Quarta instrução (num7 e num8)
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    @ Terceira Instrução
+    push {r0-r3}
 
-    mov r4, #12                  @ Position = 12
+    ldrsb r0, [r7, #4]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #5]           @ num2 = matrixA[1]
+    mov r2, #6                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#1}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    ldrsb r6, [r0, #8]           @ num9 = matrixA[8] 
-    mov r7, #0                   @ num10 = zero
-    
-    @ Quinta instrução (num9 e zero)
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    pop {r0-r3}
 
-    ldr r0, =matrixB             @ Ponteiro para matrixB
-    ldr r0, [r0]
+    @ Quarta Instrução
+    push {r0-r3}
 
-    ldrsb r6, [r0, #0]           @ num1 = matrixB[0] 
-    ldrsb r7, [r0, #1]           @ num2 = matrixB[1]
-    ldrsb r8, [r0, #2]           @ num3 = matrixB[2]
-    ldrsb r9, [r0, #3]           @ num4 = matrixB[3]
-    
-    mov r3, #1                   @ Mat Targ = 0 (matriz A)
+    ldrsb r0, [r7, #6]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #7]           @ num2 = matrixA[1]
+    mov r2, #10                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#1}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    mov r4, #0                   @ Position = 0
-    mov r5, #2                   @ Position = 2
-    mov r12, #0x10               @ Mat. Siz = 01 (3x3), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
-  
-    @ Primeira instrução (num1 e num2)
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    pop {r0-r3}
 
-    @ Segunda instrução (num3 e num4)
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    @ Quinta Instrução
+    push {r0-r3}
 
-    ldrsb r6, [r0, #4]           @ num5 = matrixB[4] 
-    ldrsb r7, [r0, #5]           @ num6 = matrixB[5]
-    ldrsb r8, [r0, #6]           @ num7 = matrixB[6]
-    ldrsb r9, [r0, #7]           @ num8 = matrixB[7]
+    ldrsb r0, [r7, #8]            @ num1 = matrixA[0] (com extensão de sinal)
+    mov r1, #0                   @ num2 = matrixA[1]
+    mov r2, #12                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#1}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    mov r4, #6                   @ Position = 6
-    mov r5, #10                  @ Position = 10
+    pop {r0-r3}
 
-    @ Terceira instrução (num5 e num6)
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    ldr r7, =matrixB             @ Ponteiro para matrixB
+    ldr r7, [r7]
 
-    @ Quarta instrução (num7 e num8)
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    @ Primeira Instrução
+    push {r0-r3}
 
-    mov r4, #12                  @ Position = 12
+    ldrsb r0, [r7, #0]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #1]           @ num2 = matrixA[1]
+    mov r2, #0                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#1}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    ldrsb r6, [r0, #8]           @ num9 = matrixB[8] 
-    mov r7, #0                   @ num10 = zero
-    
-    @ Quinta instrução (num9 e zero)
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num9 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num10 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    pop {r0-r3}
+
+    @ Segunda Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #2]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #3]           @ num2 = matrixA[1]
+    mov r2, #2                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#1}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Terceira Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #4]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #5]           @ num2 = matrixA[1]
+    mov r2, #6                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#1}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Quarta Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #6]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #7]           @ num2 = matrixA[1]
+    mov r2, #10                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#1}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Quinta Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, 8]            @ num1 = matrixA[0] (com extensão de sinal)
+    mov r1, #0                   @ num2 = matrixA[1]
+    mov r2, #12                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#1}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
 
     pop {r1-r12, lr}
     bx lr
 
 load4x4:
-    ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
-    ldr r11, [r11]
-    ldr r0, =matrixA             @ Ponteiro para matrixA
-    ldr r0, [r0]
+    @ Enviando matriz A
+    ldr r7, =matrixA             @ Ponteiro para matrixA
+    ldr r7, [r7]
 
-    @ Enviando (num1, num2, num3 e num4)
-    ldrsb r6, [r0, #0]           @ num1 = matrixA[0] 
-    ldrsb r7, [r0, #1]           @ num2 = matrixA[1]
-    ldrsb r8, [r0, #2]           @ num3 = matrixA[2]
-    ldrsb r9, [r0, #3]           @ num4 = matrixA[3]
+    @ Primeira Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #0]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #1]           @ num2 = matrixA[1]
+    mov r2, #0                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#2}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Segunda Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #2]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #3]           @ num2 = matrixA[1]
+    mov r2, #2                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#2}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Terceira Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #4]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #5]           @ num2 = matrixA[1]
+    mov r2, #5                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#2}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Quarta Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #6]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #7]           @ num2 = matrixA[1]
+    mov r2, #7                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#2}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Quinta Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #8]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #9]           @ num2 = matrixA[1]
+    mov r2, #10                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#2}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Sexta Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #10]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #11]           @ num2 = matrixA[1]
+    mov r2, #12                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#2}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
     
-    mov r3, #0                   @ Mat Targ = 0 (matriz A)
+    @ Sétima Instrução
+    push {r0-r3}
 
-    mov r4, #0                   @ Position = 0
-    mov r5, #2                   @ Position = 2
-    mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
+    ldrsb r0, [r7, #12]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #13]           @ num2 = matrixA[1]
+    mov r2, #15                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#2}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    pop {r0-r3}
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    @ Oitava Instrução
+    push {r0-r3}
 
-    @ Enviando (num5, num6, num7 e num8)
-    ldrsb r6, [r0, #4]           @ num5 = matrixA[4] 
-    ldrsb r7, [r0, #5]           @ num6 = matrixA[5]
-    ldrsb r8, [r0, #6]           @ num7 = matrixA[6]
-    ldrsb r9, [r0, #7]           @ num8 = matrixA[7]
+    ldrsb r0, [r7, #14]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #15]           @ num2 = matrixA[1]
+    mov r2, #17                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#2}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3} 
+
+    @ Enviando matriz B
+    ldr r7, =matrixB             @ Ponteiro para matrixB
+    ldr r7, [r7]
+
+    @ Primeira Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #0]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #1]           @ num2 = matrixA[1]
+    mov r2, #0                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#2}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Segunda Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #2]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #3]           @ num2 = matrixA[1]
+    mov r2, #2                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#2}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Terceira Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #4]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #5]           @ num2 = matrixA[1]
+    mov r2, #5                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#2}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Quarta Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #6]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #7]           @ num2 = matrixA[1]
+    mov r2, #7                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#2}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Quinta Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #8]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #9]           @ num2 = matrixA[1]
+    mov r2, #10                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#2}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Sexta Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #10]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #11]           @ num2 = matrixA[1]
+    mov r2, #12                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#2}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
     
-    mov r4, #5                   @ Position = 5
-    mov r5, #7                   @ Position = 7
-    mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
+    @ Sétima Instrução
+    push {r0-r3}
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    ldrsb r0, [r7, #12]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #13]           @ num2 = matrixA[1]
+    mov r2, #15                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#2}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done    
+    pop {r0-r3}
 
-    @ Enviando (num9, num10, num11 e num12)
-    ldrsb r6, [r0, #8]           @ num9 = matrixA[8] 
-    ldrsb r7, [r0, #9]           @ num10 = matrixA[9]
-    ldrsb r8, [r0, #10]          @ num11 = matrixA[10]
-    ldrsb r9, [r0, #11]          @ num12 = matrixA[11]
-    
-    mov r4, #10                  @ Position = 10
-    mov r5, #12                  @ Position = 12
-    mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
+    @ Oitava Instrução
+    push {r0-r3}
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    ldrsb r0, [r7, #14]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #15]           @ num2 = matrixA[1]
+    mov r2, #17                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#2}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done                    
-
-    @ Enviando (num13, num14, num15 e num16)
-    ldrsb r6, [r0, #12]          @ num13 = matrixA[12] 
-    ldrsb r7, [r0, #13]          @ num14 = matrixA[13]
-    ldrsb r8, [r0, #14]          @ num15 = matrixA[14]
-    ldrsb r9, [r0, #15]          @ num16 = matrixA[15]
-    
-    mov r4, #15                  @ Position = 15
-    mov r5, #17                  @ Position = 17
-    mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done     
-
-    ldr r0, =matrixB             @ Ponteiro para matrixB
-    ldr r0, [r0]
-
-    @ Enviando (num1, num2, num3 e num4)
-    ldrsb r6, [r0, #0]           @ num1 = matrixB[0] 
-    ldrsb r7, [r0, #1]           @ num2 = matrixB[1]
-    ldrsb r8, [r0, #2]           @ num3 = matrixB[2]
-    ldrsb r9, [r0, #3]           @ num4 = matrixB[3]
-    
-    mov r3, #1                   @ Mat Targ = 0 (matriz A)
-
-    mov r4, #0                   @ Position = 0
-    mov r5, #2                   @ Position = 2
-    mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
-
-    @ Enviando (num5, num6, num7 e num8)
-    ldrsb r6, [r0, #4]           @ num5 = matrixB[4] 
-    ldrsb r7, [r0, #5]           @ num6 = matrixB[5]
-    ldrsb r8, [r0, #6]           @ num7 = matrixB[6]
-    ldrsb r9, [r0, #7]           @ num8 = matrixB[7]
-    
-    mov r4, #5                   @ Position = 5
-    mov r5, #7                   @ Position = 7
-    mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done    
-
-    @ Enviando (num9, num10, num11 e num12)
-    ldrsb r6, [r0, #8]           @ num9 = matrixB[8] 
-    ldrsb r7, [r0, #9]           @ num10 = matrixB[9]
-    ldrsb r8, [r0, #10]          @ num11 = matrixB[10]
-    ldrsb r9, [r0, #11]          @ num12 = matrixB[11]
-    
-    mov r4, #10                  @ Position = 10
-    mov r5, #12                  @ Position = 12
-    mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done                    
-
-    @ Enviando (num13, num14, num15 e num16)
-    ldrsb r6, [r0, #12]          @ num13 = matrixB[12] 
-    ldrsb r7, [r0, #13]          @ num14 = matrixB[13]
-    ldrsb r8, [r0, #14]          @ num15 = matrixB[14]
-    ldrsb r9, [r0, #15]          @ num16 = matrixB[15]
-    
-    mov r4, #15                  @ Position = 15
-    mov r5, #17                  @ Position = 17
-    mov r12, #0x20               @ Mat. Siz = 02 (4x4), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done   
+    pop {r0-r3}
 
     pop {r1-r12, lr}
     bx lr
 
 load5x5:
-    ldr r11, =mapped_addr        @ Carregamos o endereço da FPGA
-    ldr r11, [r11]
-    ldr r0, =matrixA             @ Ponteiro para matrixA
-    ldr r0, [r0]
+    ldr r7, =matrixA             @ Ponteiro para matrixA
+    ldr r7, [r7]
 
-    @ Enviando (num1, num2, num3 e num4)
-    ldrsb r6, [r0, #0]           @ num1 = matrixA[0] 
-    ldrsb r7, [r0, #1]           @ num2 = matrixA[1]
-    ldrsb r8, [r0, #2]           @ num3 = matrixA[2]
-    ldrsb r9, [r0, #3]           @ num4 = matrixA[3]
+    @ Primeira Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #0]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #1]           @ num2 = matrixA[1]
+    mov r2, #0                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Segunda Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #2]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #3]           @ num2 = matrixA[1]
+    mov r2, #2                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Terceira Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #4]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #5]           @ num2 = matrixA[1]
+    mov r2, #4                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Quarta Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #6]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #7]           @ num2 = matrixA[1]
+    mov r2, #6                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Quinta Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #8]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #9]           @ num2 = matrixA[1]
+    mov r2, #8                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Sexta Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #10]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #11]           @ num2 = matrixA[1]
+    mov r2, #10                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
     
-    mov r3, #0                   @ Mat Targ = 0 (matriz A)
+    @ Sétima Instrução
+    push {r0-r3}
 
-    mov r4, #0                   @ Position = 0
-    mov r5, #2                   @ Position = 2
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
+    ldrsb r0, [r7, #12]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #13]           @ num2 = matrixA[1]
+    mov r2, #12                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    pop {r0-r3}
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    @ Oitava Instrução
+    push {r0-r3}
 
-    @ Enviando (num5, num6, num7 e num8)
-    ldrsb r6, [r0, #4]           @ num5 = matrixA[4] 
-    ldrsb r7, [r0, #5]           @ num6 = matrixA[5]
-    ldrsb r8, [r0, #6]           @ num7 = matrixA[6]
-    ldrsb r9, [r0, #7]           @ num8 = matrixA[7]
-    
-    mov r4, #4                   @ Position = 4
-    mov r5, #6                   @ Position = 6
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
+    ldrsb r0, [r7, #14]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #15]           @ num2 = matrixA[1]
+    mov r2, #14                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    pop {r0-r3}
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done    
+    @ Nona Instrução
+    push {r0-r3}
 
-    @ Enviando (num9, num10, num11 e num12)
-    ldrsb r6, [r0, #8]           @ num9 = matrixA[8] 
-    ldrsb r7, [r0, #9]           @ num10 = matrixA[9]
-    ldrsb r8, [r0, #10]          @ num11 = matrixA[10]
-    ldrsb r9, [r0, #11]          @ num12 = matrixA[11]
-    
-    mov r4, #8                   @ Position = 8
-    mov r5, #10                  @ Position = 10
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
+    ldrsb r0, [r7, #16]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #17]           @ num2 = matrixA[1]
+    mov r2, #16                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    pop {r0-r3}
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done                    
+    @ Decima Instrução
+    push {r0-r3}
 
-    @ Enviando (num13, num14, num15 e num16)
-    ldrsb r6, [r0, #12]          @ num13 = matrixA[12] 
-    ldrsb r7, [r0, #13]          @ num14 = matrixA[13]
-    ldrsb r8, [r0, #14]          @ num15 = matrixA[14]
-    ldrsb r9, [r0, #15]          @ num16 = matrixA[15]
-    
-    mov r4, #12                  @ Position = 12
-    mov r5, #14                  @ Position = 14
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
+    ldrsb r0, [r7, #18]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #19]           @ num2 = matrixA[1]
+    mov r2, #18                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    pop {r0-r3}
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done  
+    @ Onze Instrução
+    push {r0-r3}
 
-    @ Enviando (num17, num18, num19 e num20)
-    ldrsb r6, [r0, #16]          @ num17 = matrixA[16] 
-    ldrsb r7, [r0, #17]          @ num18 = matrixA[17]
-    ldrsb r8, [r0, #18]          @ num19 = matrixA[18]
-    ldrsb r9, [r0, #19]          @ num20 = matrixA[19]
-    
-    mov r4, #16                  @ Position = 16
-    mov r5, #18                  @ Position = 18
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
+    ldrsb r0, [r7, #20]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #21]           @ num2 = matrixA[1]
+    mov r2, #20                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    pop {r0-r3}
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done  
+    @ Doze Instrução
+    push {r0-r3}
 
-    @ Enviando (num21, num22, num23 e num24)
-    ldrsb r6, [r0, #20]          @ num21 = matrixA[20] 
-    ldrsb r7, [r0, #21]          @ num22 = matrixA[21]
-    ldrsb r8, [r0, #22]          @ num23 = matrixA[22]
-    ldrsb r9, [r0, #23]          @ num24 = matrixA[23]
-    
-    mov r4, #20                  @ Position = 20
-    mov r5, #22                  @ Position = 22
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
+    ldrsb r0, [r7, #22]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #23]           @ num2 = matrixA[1]
+    mov r2, #22                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    pop {r0-r3}
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done  
+    @ Treze Instrução
+    push {r0-r3}
 
-    @ Enviando (num25 e zero)
-    ldrsb r6, [r0, #20]          @ num21 = matrixA[20] 
-    mov r7, #0                   @ num22 = matrixA[21]
+    ldrsb r0, [r7, #24]           @ num1 = matrixA[0] (com extensão de sinal)
+    mov r1, #0                    @ num2 = 0  
+    mov r2, #24                   @ Position
+    mov r3, #0                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    mov r4, #24                  @ Position = 24
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
+    pop {r0-r3}
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
 
     @ Enviando matriz B
 
-    ldr r0, =matrixB             @ Ponteiro para matrixB
-    ldr r0, [r0]
+    ldr r7, =matrixB             @ Ponteiro para matrixB
+    ldr r7, [r7]
 
-    @ Enviando (num1, num2, num3 e num4)
-    ldrsb r6, [r0, #0]           @ num1 = matrixB[0] 
-    ldrsb r7, [r0, #1]           @ num2 = matrixB[1]
-    ldrsb r8, [r0, #2]           @ num3 = matrixB[2]
-    ldrsb r9, [r0, #3]           @ num4 = matrixB[3]
+    @ Primeira Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #0]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #1]           @ num2 = matrixA[1]
+    mov r2, #0                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Segunda Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #2]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #3]           @ num2 = matrixA[1]
+    mov r2, #2                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Terceira Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #4]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #5]           @ num2 = matrixA[1]
+    mov r2, #4                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Quarta Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #6]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #7]           @ num2 = matrixA[1]
+    mov r2, #6                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Quinta Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #8]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #9]           @ num2 = matrixA[1]
+    mov r2, #8                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Sexta Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #10]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #11]           @ num2 = matrixA[1]
+    mov r2, #10                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
     
-    mov r3, #1                   @ Mat Targ = 0 (matriz B)
+    @ Sétima Instrução
+    push {r0-r3}
 
-    mov r4, #0                   @ Position = 0
-    mov r5, #2                   @ Position = 2
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
+    ldrsb r0, [r7, #12]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #13]           @ num2 = matrixA[1]
+    mov r2, #12                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    pop {r0-r3}
 
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
+    @ Oitava Instrução
+    push {r0-r3}
 
-    @ Enviando (num5, num6, num7 e num8)
-    ldrsb r6, [r0, #4]           @ num5 = matrixB[4] 
-    ldrsb r7, [r0, #5]           @ num6 = matrixB[5]
-    ldrsb r8, [r0, #6]           @ num7 = matrixB[6]
-    ldrsb r9, [r0, #7]           @ num8 = matrixB[7]
+    ldrsb r0, [r7, #14]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #15]           @ num2 = matrixA[1]
+    mov r2, #14                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Nona Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #16]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #17]           @ num2 = matrixA[1]
+    mov r2, #16                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Decima Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #18]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #19]           @ num2 = matrixA[1]
+    mov r2, #18                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Onze Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #20]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #21]           @ num2 = matrixA[1]
+    mov r2, #20                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Doze Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #22]           @ num1 = matrixA[0] (com extensão de sinal)
+    ldrsb r1, [r7, #23]           @ num2 = matrixA[1]
+    mov r2, #22                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
+
+    @ Treze Instrução
+    push {r0-r3}
+
+    ldrsb r0, [r7, #24]           @ num1 = matrixA[0] (com extensão de sinal)
+    mov r1, #0                    @ num2 = 0  
+    mov r2, #24                   @ Position
+    mov r3, #1                   @ Matriz Destino
+    push {#0}                    @ Opcode
+    push {#3}                    @ Tamanho da matriz
+    bl send_instruction
+    add sp, sp, #8               @ Remove os elementos da pilha
+
+    pop {r0-r3}
     
-    mov r4, #4                   @ Position = 0
-    mov r5, #6                   @ Position = 2
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done    
-
-    @ Enviando (num9, num10, num11 e num12)
-    ldrsb r6, [r0, #8]           @ num9 = matrixB[8] 
-    ldrsb r7, [r0, #9]           @ num10 = matrixB[9]
-    ldrsb r8, [r0, #10]          @ num11 = matrixB[10]
-    ldrsb r9, [r0, #11]          @ num12 = matrixB[11]
-    
-    mov r4, #8                   @ Position = 0
-    mov r5, #10                  @ Position = 2
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done                    
-
-    @ Enviando (num13, num14, num15 e num16)
-    ldrsb r6, [r0, #12]          @ num13 = matrixB[12] 
-    ldrsb r7, [r0, #13]          @ num14 = matrixB[13]
-    ldrsb r8, [r0, #14]          @ num15 = matrixB[14]
-    ldrsb r9, [r0, #15]          @ num16 = matrixB[15]
-    
-    mov r4, #12                  @ Position = 0
-    mov r5, #14                  @ Position = 2
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done  
-
-    @ Enviando (num17, num18, num19 e num20)
-    ldrsb r6, [r0, #16]          @ num17 = matrixB[16] 
-    ldrsb r7, [r0, #17]          @ num18 = matrixB[17]
-    ldrsb r8, [r0, #18]          @ num19 = matrixB[18]
-    ldrsb r9, [r0, #19]          @ num20 = matrixB[19]
-    
-    mov r4, #16                  @ Position = 0
-    mov r5, #18                  @ Position = 2
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done  
-
-    @ Enviando (num21, num22, num23 e num24)
-    ldrsb r6, [r0, #20]          @ num21 = matrixB[20] 
-    ldrsb r7, [r0, #21]          @ num22 = matrixB[21]
-    ldrsb r8, [r0, #22]          @ num23 = matrixB[22]
-    ldrsb r9, [r0, #23]          @ num24 = matrixB[23]
-    
-    mov r4, #20                  @ Position = 0
-    mov r5, #22                  @ Position = 2
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r8, lsl #20    @ num3 (bits 20-27)
-    orr r10, r10, r9, lsl #12    @ num4 (bits 12-19)
-    orr r10, r10, r5, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done  
-
-    @ Enviando (num25 e zero)
-    ldrsb r6, [r0, #24]          @ num21 = matrixB[24] 
-    mov r7, #0                   @ num22 = matrixB[25]
-
-    mov r4, #20                  @ Position = 0
-    mov r12, #0x30               @ Mat. Siz = 03 (5x5), Opcode = 0000
-    and r12, r12, #0x3F          @ Máscara 0b00111111 (bits 0-5)
-
-    mov r10, #0x10000000         @ Bit 28 = 1
-    orr r10, r10, r6, lsl #20    @ num1 (bits 20-27)
-    orr r10, r10, r7, lsl #12    @ num2 (bits 12-19)
-    orr r10, r10, r4, lsl #7     @ Position (bits 7-11)
-    orr r10, r10, r3, lsl #6     @ Mat Targ (bit 6)
-    orr r10, r10, r12            @ Mat. Siz + Opcode
-    str r10, [r11]               @ Envia para FPGA
-    bl wait_for_done
-  
     pop {r1-r12, lr}
     bx lr
 
@@ -1310,7 +1254,7 @@ store4x4:
     pop {lr}
     bx lr
 
-LTORG
+.ltorg
 
 store5x5:
     @ 0, 4, 8, 12, 16, 20, 24
@@ -1494,6 +1438,47 @@ restart:
     pop {r0-r11, lr}
 
     bx lr
+
+@ Procedimento utilizado para montar uma instrução e enviar ao coprocessador
+@ ---------------------------------------------------------------------------------
+@ Parâmetros:
+@ r0 - num1
+@ r1 - num2
+@ r2 - position
+@ r3 - mat_target
+@ r4 - mat_size (Via Stack)
+@ r5 - opcode (Via Stack)
+@----------------------------------------------------------------------------------
+send_instruction:
+    push{r0-r7, lr}
+    
+    ldr r4, [sp, #36] @Carrega Mat_size
+    ldr r5, [sp, #40] @Carrega opcode
+    ldr r7, =mapped_addr
+    ldr r7, [r7]
+
+    @ Máscara de bits para garantir que os valores tem as informações corretas
+    and r0, r0, #0xFF
+    and r1, r1, #0xFF
+    and r2, r2, #0x1F
+    and r3, r3, #0x1
+    and r4, r4, #0x3
+    and r5, r5, #0xF
+
+    @ Constrói a instrução
+    mov r6, #0x10000000
+    orr r6, r6, r0, lsl #20
+    orr r6, r6, r1, lsl #12
+    orr r6, r6, r2, lsl #7
+    orr r6, r6, r3, lsl #6
+    orr r6, r6, r4, lsl #4
+    orr r6, r6, r5
+
+    str r6, [r7]
+    bl wait_for_done
+
+    pop{r0-r7, lr}
+
 
 @ -----------------------------------------------------------------------------------------------
 
