@@ -1252,7 +1252,9 @@ store4x4:
     lsr r1, r1, #8               
     strb r1, [r0, #3]       
 
-    mov r5, #5                   
+    mov r5, #5                
+    mov r10, #0x10000000            
+    orr r10, r10, r2  
     orr r10, r10, r5, lsl #7     
     orr r10, r10, r3, lsl #4
     str r10, [r11]               
@@ -1270,7 +1272,9 @@ store4x4:
     lsr r1, r1, #8               
     strb r1, [r0, #7]   
 
-    mov r5, #10                   
+    mov r5, #10                       
+    mov r10, #0x10000000            
+    orr r10, r10, r2  
     orr r10, r10, r5, lsl #7    
     orr r10, r10, r3, lsl #4 
     str r10, [r11]               
@@ -1288,7 +1292,9 @@ store4x4:
     lsr r1, r1, #8               
     strb r1, [r0, #11]   
 
-    mov r5, #15                  
+    mov r5, #15  
+    mov r10, #0x10000000            
+    orr r10, r10, r2                  
     orr r10, r10, r5, lsl #7 
     orr r10, r10, r3, lsl #4   
     str r10, [r11]               
