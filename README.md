@@ -144,3 +144,42 @@ O protocolo de handshaking implementado entre o HPS e o coprocessador (FPGA) seg
 
 Esse fluxo garante sincronização precisa entre ambos os módulos, evitando condições de corrida e garantindo que cada instrução seja processada individualmente antes do envio da próxima.  
 
+
+### 🧩 Código Assembly
+- Montagem de Instrução
+- Syscalls
+- Mapeamento de memória
+- Envio pelo Barramento
+- Implementação do Handshake
+
+### 💻 Integração com C
+- Interação com usuário
+- Chamada da Biblioteca em Assembly
+
+## 🧪 Testes, Resultados e Discussões
+
+// breve introdução ao tópico
+
+### ✅ Testes Realizados
+
+// falar sobre como os testes foram realizados
+
+### 📈 Resultados Obtidos
+
+// Falar sobre os bons resultados que foram obtidos e que as metas foram cumpridas
+
+### 💡 Discussão e Possíveis Melhorias
+
+// Falar sobre a saturação do overflow
+// Falar sobre a implementação da convolução à nível de hardware
+
+---
+
+## 👥 Este projeto foi desenvolvido por:
+
+- **Guilherme Fernandes Sardinha** 
+- **Robson Carvalho de Souza**   
+- **Lucas Damasceno da Conceição**
+
+Agradecimentos ao(a) professor(a) **Wild Freitas da Silva Santos** pela orientação ao longo do projeto.
+
