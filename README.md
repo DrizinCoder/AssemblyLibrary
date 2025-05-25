@@ -87,14 +87,16 @@ A principal modificação consistiu na reformulação do formato da instrução 
 
 // Imagem com novo formato das instruções
 
-| Atributo | Descrição |
-|----------|-----------|
-| MT       | Matriz alvo do carregamento (A ou B) |
-| M_Size   | Tamanho da matriz utilizado por operações de movimentação de dados e aritméticas |
-| OPCODE   | Código de operação |
-| Position |Posição do registrador utilizada por operações de movimentação de dados|
-|Num 1 | Número a ser inserido na matriz alvo|
-|Num 2 | Número a ser inserido na matriz alvo|
+![Formato da Instrução do Coprocessador](images/formatoInstrução.jpg)
+
+| Campo    | Bits | Descrição                                                                 |
+|----------|------|---------------------------------------------------------------------------|
+| Num 2    | 8    | Segundo operando de 8 bits para a instrução (ex: elemento da matriz)      |
+| Num 1    | 8    | Primeiro operando de 8 bits para a instrução (ex: elemento da matriz)     |
+| Position | 5    | Posição dentro do registrador/matriz alvo (para operações de LOAD/STORE)  |
+| MT       | 1    | Matriz Alvo (0 para Matriz A, 1 para Matriz B em operações de LOAD)       |
+| M_Size   | 2    | Tamanho da Matriz (00: 2x2, 01: 3x3, 10: 4x4, 11: 5x5)                    |
+| OPCODE   | 4    | Código da Operação (LOAD, STORE, SUM, MUL, DET, etc.)                     |
 
 A nova implementação exigiu uma reformulação na forma como os dados eram inseridos nos registradores e enviados ao processador. Essa mudança foi uma consequência direta da modificação no formato da instrução, que passou a incorporar informações adicionais sobre os dados e suas posições.
 
@@ -146,40 +148,140 @@ Esse fluxo garante sincronização precisa entre ambos os módulos, evitando con
 
 
 ### 🧩 Código Assembly
-- Montagem de Instrução
-- Syscalls
-- Mapeamento de memória
-- Envio pelo Barramento
-- Implementação do Handshake
+O código Assembly (`driver.s`) é o núcleo da biblioteca de comunicação com o coprocessador FPGA. Suas principais responsabilidades e características são:
+
+-   **Interface de Funções Globais:**
+    -   `driver`: Função principal chamada pelo código C, orquestra as operações de `load`, `operation` e `store`. Recebe ponteiros para as matrizes A, B, R, o tamanho da matriz e o opcode da operação.
+    -   `mmap_setup`: Responsável por abrir `/dev/mem` e mapear a região de memória física dos PIOs da FPGA para o espaço de endereçamento virtual do processo HPS.
+    -   `mmap_cleanup`: Desfaz o mapeamento de memória e fecha o descritor de arquivo de `/dev/mem`.
+
+-   **Montagem e Envio de Instruções (`load`, `operation`):**
+    -   As sub-rotinas como `load2x2`, `load3x3`, `load4x4`, `load5x5` são responsáveis por carregar os dados das matrizes A e B para o coprocessador.
+    -   Elas montam a instrução de 28 bits conforme o formato definido (Num1, Num2, Position, MT, M\_Size, OPCODE=LOAD). Por exemplo, em `load2x2` para a matriz A:
+        -   `r6` (Num1), `r7` (Num2) são carregados dos ponteiros `matrixA`.
+        -   `r3` (MT) é 0 para matriz A, 1 para matriz B.
+        -   `r4` e `r5` (Position) indicam onde os dados devem ser escritos.
+        -   `r12` contém `M_Size` e o `OPCODE` de LOAD (implicitamente 0000 para a carga).
+        -   A instrução é combinada com `0x10000000` (Start bit) e escrita no `mapped_addr`.
+    -   A sub-rotina `operation` (e suas ramificações como `sum`, `multiplication`, etc.) monta a instrução para a operação aritmética ou de manipulação desejada (OPCODE específico, M\_Size se aplicável) e a envia.
+
+-   **Leitura de Resultados (`store`):**
+    -   As sub-rotinas `store2x2`, `store3x3`, etc., preparam e enviam uma instrução de `STORE` (OPCODE `0x8`) para o coprocessador, especificando a posição e o tamanho da matriz de resultado.
+    -   Após o handshake (`wait_for_done`), os dados do resultado são lidos do PIO no offset `0x10` (relativo a `mapped_addr`) e armazenados no ponteiro `matrixR`. Os bytes são extraídos da palavra de 32 bits lida.
+
+-   **Mapeamento de Memória (`mmap_setup`, `mmap_cleanup`):**
+    -   `mmap_setup`:
+        1.  Abre o dispositivo `/dev/mem` com permissão de leitura e escrita (`O_RDWR`).
+        2.  Utiliza a syscall `mmap` (número 192) para mapear `0x1000` bytes (4KB) da memória física a partir do endereço base do Lightweight HPS-to-FPGA bridge (endereço físico base `0xFF200000`, com o PIO específico residindo em um offset dentro desta ponte, o código usa `0xFF200` como base para `mmap`, que o kernel ajusta para o alinhamento da página). O endereço virtual retornado por `mmap` é armazenado em `mapped_addr`.
+    -   `mmap_cleanup`:
+        1.  Utiliza a syscall `munmap` (número 91) para liberar a região de memória mapeada.
+        2.  Utiliza a syscall `close` (número 6) para fechar o descritor de arquivo de `/dev/mem`.
+
+-   **Implementação do Handshake (`wait_for_done`, `restart`):**
+    -   `wait_for_done`: Entra em um loop (`wait_loop`) lendo continuamente o registrador PIO no offset `0x30` de `mapped_addr`. Ele verifica se o bit 3 (`0x08`) está setado (sinal `Done_operation` do FPGA).
+    -   `restart`: Após `Done_operation` ser detectado, esta parte (dentro de `wait_for_done`) envia `0x00000000` para o endereço base do PIO (`mapped_addr + 0x0`), efetivamente zerando o sinal `Start` para o coprocessador.
+
+-   **Uso de Syscalls:**
+    -   Syscalls são invocadas usando a instrução `svc #0`, com o número da syscall em `r7` e os argumentos nos registradores `r0-r5` conforme a convenção da ABI ARM EABI.
+        -   `#5 (open)`: Usado em `mmap_setup`.
+        -   `#192 (mmap2)`: Usado em `mmap_setup` para mapear memória.
+        -   `#91 (munmap)`: Usado em `mmap_cleanup`.
+        -   `#6 (close)`: Usado em `mmap_cleanup` (e em `fail_mmap`).
+        -   `#4 (write)`: Usado na função `welcome` para imprimir uma mensagem de boas-vindas (não diretamente parte da lógica do driver, mas presente no arquivo).
 
 ### 💻 Integração com C
-- Interação com usuário
-- Chamada da Biblioteca em Assembly
+A integração entre a aplicação de alto nível em C (`main.c`) e a biblioteca Assembly (`driver.s`) é um aspecto crucial do projeto, permitindo que a complexidade da comunicação de baixo nível seja abstraída do usuário final.
+
+-   **Interação com Usuário (`main.c`):**
+    -   O programa C fornece uma interface de linha de comando simples para o usuário.
+    -   Ele solicita ao usuário que escolha a operação matricial desejada (soma, subtração, multiplicação, oposta, transposta, multiplicação por escalar, determinante).
+    -   Solicita o tamanho das matrizes (2x2, 3x3, 4x4 ou 5x5).
+    -   Lê os elementos das matrizes de entrada (Matriz A e, se necessário, Matriz B) fornecidos pelo usuário.
+    -   Aloca dinamicamente memória para as matrizes A, B e R (resultado) usando `calloc`.
+
+-   **Chamada da Biblioteca em Assembly (`main.c` -> `driver.s`):**
+    -   **Setup e Cleanup:** Antes de qualquer operação e após todas as operações, `main.c` chama as funções Assembly `mmap_setup()` e `mmap_cleanup()` respectivamente. `mmap_setup()` inicializa o mapeamento de memória necessário para que o código Assembly possa acessar os registradores PIO da FPGA. `mmap_cleanup()` libera esses recursos.
+    -   **Função `driver`:** A função principal `driver` em Assembly é declarada como `extern` em C. Ela é chamada da seguinte forma:
+        ```c
+        driver(matrixA, matrixB, matrixR, size_mask(size), operation); //
+        ```
+        -   `matrixA`, `matrixB`, `matrixR`: São ponteiros para `int8_t` contendo os dados das matrizes. O Assembly acessará esses dados.
+        -   `size_mask(size)`: Uma função C que converte o tamanho da matriz (2, 3, 4, 5) para o valor de `M_Size` esperado pelo coprocessador (0, 1, 2, 3).
+        -   `operation`: O código da operação escolhido pelo usuário (1 para Soma, 2 para Subtração, etc.), que o Assembly usará para definir o `OPCODE`.
+    -   **Impressão de Resultados:** Após a chamada `driver` retornar, `main.c` imprime a matriz resultado (`matrixR`) no console.
+    -   **Liberação de Memória:** A memória alocada para as matrizes é liberada usando `free()`.
+
+Essa arquitetura permite que o código C gerencie a lógica da aplicação e a interação com o usuário, enquanto o código Assembly lida eficientemente com a comunicação direta com o hardware do coprocessador na FPGA.
 
 ## 🧪 Testes, Resultados e Discussões
 
-// breve introdução ao tópico
+Esta seção detalha o processo de validação do sistema, os resultados alcançados e uma discussão sobre possíveis melhorias futuras.
 
 ### ✅ Testes Realizados
 
-// falar sobre como os testes foram realizados
+Para validar a funcionalidade da biblioteca Assembly e a correta operação do coprocessador matricial, foram realizados testes funcionais abrangentes. A aplicação em C (`main.c`) serviu como a principal ferramenta de teste, permitindo a inserção de diversos casos de teste e a observação dos resultados.
+
+Os testes cobriram os seguintes aspectos:
+-   **Todas as Operações Implementadas:** Cada uma das operações (Soma, Subtração, Multiplicação, Matriz Oposta, Transposta, Multiplicação por Escalar e Determinante) foi testada individualmente.
+-   **Diferentes Tamanhos de Matriz:** As operações foram validadas para todos os tamanhos de matriz suportados pelo coprocessador (2x2, 3x3, 4x4 e 5x5), conforme selecionável pelo usuário no `main.c`.
+-   **Valores de Entrada Variados:** Foram utilizados diferentes conjuntos de valores para os elementos das matrizes, incluindo:
+    -   Valores positivos e negativos.
+    -   Valores nulos.
+    -   Valores que poderiam levar a resultados nos limites da representação de 8 bits com sinal (próximos de -128 e 127).
+-   **Casos Específicos:**
+    -   Multiplicação por matriz identidade.
+    -   Multiplicação por matriz nula.
+    -   Soma com matriz nula.
+    -   Cálculo de determinante para matrizes singulares (resultado zero) e não singulares.
+-   **Comunicação e Handshake:** A correta sincronização entre HPS e FPGA foi observada indiretamente através do sucesso das operações. O mecanismo de `wait_for_done` e o `restart` do ciclo foram cruciais e seu funcionamento correto é evidenciado pela capacidade de realizar múltiplas operações em sequência.
+-   **Mapeamento de Memória:** O sucesso na chamada de `mmap_setup` e `mmap_cleanup` e a capacidade de ler e escrever nos PIOs confirmaram o funcionamento do mapeamento de memória.
+
+Os resultados obtidos pelo coprocessador foram comparados com cálculos manuais ou resultados de calculadoras matriciais padrão para verificar a precisão.
 
 ### 📈 Resultados Obtidos
 
-// Falar sobre os bons resultados que foram obtidos e que as metas foram cumpridas
+Os testes demonstraram que a biblioteca Assembly desenvolvida comunica-se com sucesso com o coprocessador matricial na FPGA. Todas as operações implementadas (soma, subtração, multiplicação, oposta, transposta, multiplicação por escalar e determinante) funcionaram corretamente para os tamanhos de matriz suportados (2x2, 3x3, 4x4 e 5x5).
+
+-   A interface em C permitiu uma fácil interação e teste das funcionalidades do coprocessador.
+-   O protocolo de handshaking mostrou-se robusto, garantindo a sincronização adequada entre o HPS e a FPGA para cada instrução enviada e resultado recebido.
+-   O mapeamento de memória via `/dev/mem` foi eficaz para o acesso aos PIOs da FPGA.
+-   Os objetivos do projeto, como facilitar o uso do coprocessador através de uma biblioteca Assembly e integrar com aplicações C, foram alcançados.
+
+O sistema como um todo provou ser funcional, permitindo que o HPS delegue operações matriciais complexas para serem aceleradas pelo hardware customizado na FPGA.
 
 ### 💡 Discussão e Possíveis Melhorias
 
-// Falar sobre a saturação do overflow
-// Falar sobre a implementação da convolução à nível de hardware
+Apesar dos resultados positivos, alguns pontos podem ser discutidos e há espaço para melhorias futuras:
+
+-   **Saturação do Overflow:**
+    -   Atualmente, os elementos das matrizes são `int8_t`, variando de -128 a 127. As operações, especialmente a multiplicação, podem gerar resultados que excedem esse intervalo (overflow).
+    -   O comportamento atual do coprocessador em caso de overflow (se ele satura o valor para o máximo/mínimo representável ou se ocorre um *wrap-around*) precisaria ser caracterizado detalhadamente. O código Assembly no HPS simplesmente lê os bytes de resultado (`strb r1, [r0, #0]`) sem tratamento explícito de overflow no lado do HPS.
+    -   Uma melhoria seria implementar lógica de saturação no hardware do coprocessador para garantir que os resultados permaneçam dentro do intervalo válido, ou, alternativamente, expandir a largura de bits dos elementos da matriz resultado e dos acumuladores internos no coprocessador. O HPS poderia então ser notificado sobre a ocorrência de overflow/saturação.
+
+-   **Implementação da Convolução em Nível de Hardware:**
+    -   Uma expansão significativa da funcionalidade do coprocessador seria adicionar suporte para operações de convolução 2D. A convolução é uma operação fundamental em processamento de imagens e redes neurais convolucionais (CNNs).
+    -   Isso exigiria modificações substanciais no hardware da FPGA, incluindo unidades de multiplicação-acumulação (MAC) mais eficientes, gerenciamento de janelas deslizantes e possivelmente FIFOs para streaming de dados.
+    -   A biblioteca Assembly e a interface C também precisariam ser estendidas para suportar essa nova operação, incluindo a passagem de kernels de convolução e o manuseio de diferentes modos de padding.
+
+-   **Otimização de Desempenho:**
+    -   Embora o uso de um coprocessador já traga ganhos de desempenho, análises mais aprofundadas poderiam identificar gargalos. Por exemplo, a transferência de dados entre HPS e FPGA, elemento por elemento (ou dois por vez nas operações de `LOAD` atuais), pode ser um fator limitante para matrizes maiores.
+    -   Explorar o uso de DMA (Direct Memory Access) para transferir blocos de matrizes inteiras entre a memória do HPS e a memória embarcada na FPGA (como M10K blocks) poderia reduzir significativamente a latência de comunicação.
+
+-   **Interface de Usuário e Relato de Erros:**
+    -   A interface C atual é básica. Poderia ser aprimorada com melhor validação de entrada e feedback mais detalhado ao usuário.
+    -   O sistema de tratamento de erros, especialmente para falhas de comunicação ou erros reportados pela FPGA, poderia ser mais robusto.
+
+-   **Suporte a Tipos de Dados Maiores:**
+    -   Considerar o suporte a elementos de matriz com maior precisão (e.g., 16 bits, 32 bits, ou ponto flutuante) no coprocessador e na biblioteca Assembly para aplicações que demandem maior alcance dinâmico ou precisão.
+
+Essas melhorias poderiam expandir significativamente a aplicabilidade e o desempenho do sistema de coprocessamento matricial.
 
 ---
 
 ## 👥 Este projeto foi desenvolvido por:
 
-- **Guilherme Fernandes Sardinha** 
-- **Robson Carvalho de Souza**   
-- **Lucas Damasceno da Conceição**
+-   **Guilherme Fernandes Sardinha**
+-   **Robson Carvalho de Souza**
+-   **Lucas Damasceno da Conceição**
 
 Agradecimentos ao(a) professor(a) **Wild Freitas da Silva Santos** pela orientação ao longo do projeto.
-
