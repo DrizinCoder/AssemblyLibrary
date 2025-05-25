@@ -28,3 +28,21 @@ Para atender às especificações do problema, o projeto deve cumprir os seguint
 - O estilo de codificação deve seguir o guia disponível em [MaJerle/c-code-style](https://github.com/MaJerle/c-code-style);
 - A biblioteca deve ser compatível com aplicações desenvolvidas em linguagem C;
 - O sistema deve ser validado através de testes funcionais, com documentação adequada sobre o processo de compilação, configuração e uso.
+
+## 🛠️ Recursos Utilizados
+---
+
+### 🔧 Quartus Prime
+Síntese e Compilação:
+O Quartus Prime é utilizado para compilar o projeto em Verilog, convertendo a descrição HDL em uma implementação física adequada para a FPGA. Durante esse processo, o compilador realiza a síntese lógica, o mapeamento e o ajuste de layout (place and route), otimizando as rotas lógicas e a alocação dos recursos internos da FPGA, conforme as recomendações descritas no User Guide: Compiler.
+
+Análise de Timing:
+Emprega-se o TimeQuest Timing Analyzer para validar as restrições temporais, como os tempos de setup e hold, além de identificar os caminhos críticos no design. Essa análise é essencial para garantir que o projeto opere de forma estável em frequência alvo, conforme metodologias detalhadas na documentação oficial.
+
+Gravação na FPGA:
+A programação da FPGA é realizada via Programmer, utilizando o cabo USB-Blaster. Esse procedimento suporta a gravação de múltiplos arquivos .sof, permitindo a configuração e reconfiguração do hardware conforme especificado nos guias técnicos da Intel.
+
+Design Constraints:
+São definidas as restrições de pinos e de clock por meio do Pin Planner e das ferramentas de timing. Essas constraints garantem que as conexões físicas e os requisitos temporais sejam atendidos, alinhando-se às práticas recomendadas no User Guide da ferramenta.
+
+Referência oficial: 
