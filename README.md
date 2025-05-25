@@ -85,9 +85,7 @@ Inicialmente, foi realizada uma revisão na arquitetura do coprocessador previam
 
 A principal modificação consistiu na reformulação do formato da instrução do coprocessador, que passou de 8 para 27 bits. Essa expansão permitiu a inclusão direta dos dados das matrizes dentro da própria instrução, eliminando a necessidade de etapas intermediárias de carregamento. Com isso, tornou-se possível estabelecer uma comunicação mais direta entre o processador e o coprocessador, viabilizando uma integração mais eficiente e simplificada no contexto da execução de operações matriciais.
 
-// Imagem com novo formato das instruções
-
-![Formato da Instrução do Coprocessador](images/formatoInstrução.jpg)
+![Formato da Instrução do Coprocessador](images/formatoInstrução.jpeg)
 
 | Campo    | Bits | Descrição                                                                 |
 |----------|------|---------------------------------------------------------------------------|
