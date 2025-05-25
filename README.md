@@ -67,3 +67,80 @@ No caso do código em C, o GCC foi responsável por compilar a lógica de interf
 A compilação foi automatizada por meio de um script `Makefile`, o que facilitou a integração dos diferentes módulos e agilizou o processo de testes.
 
 Referência oficial: 
+
+### 💻 Linguagens C e Assembly
+
+A linguagem C foi empregada como camada de alto nível para interação com o usuário, gerenciamento de dados e chamada das rotinas implementadas em Assembly. Sua utilização permitiu desenvolver uma aplicação mais estruturada e acessível, mantendo a flexibilidade na manipulação de ponteiros e acesso a endereços de memória específicos.
+
+Por outro lado, a linguagem Assembly foi utilizada para criar uma biblioteca especializada em acessar e acionar o coprocessador implementado na FPGA. Através do Assembly, foi possível implementar instruções personalizadas, manipular registradores e controlar com precisão o fluxo de dados entre o HPS e o hardware, respeitando os protocolos de comunicação definidos.
+
+Essa combinação entre C e Assembly garantiu um equilíbrio entre desempenho e legibilidade, permitindo a construção de um sistema eficiente e de fácil manutenção.
+
+
+## ⚙️ Desenvolvimento e Descrição em Alto Nível
+---
+### 🔧 Ajustes Realizados no Coprocessador
+
+Inicialmente, foi realizada uma revisão na arquitetura do coprocessador previamente desenvolvido, com o objetivo de simplificar etapas do processamento e alinhar o projeto a práticas adotadas em arquiteturas mais modernas. Essa reformulação visou não apenas otimizar o desempenho geral do sistema, mas também facilitar a implementação da biblioteca em linguagem Assembly.
+
+A principal modificação consistiu na reformulação do formato da instrução do coprocessador, que passou de 8 para 27 bits. Essa expansão permitiu a inclusão direta dos dados das matrizes dentro da própria instrução, eliminando a necessidade de etapas intermediárias de carregamento. Com isso, tornou-se possível estabelecer uma comunicação mais direta entre o processador e o coprocessador, viabilizando uma integração mais eficiente e simplificada no contexto da execução de operações matriciais.
+
+// Imagem com novo formato das instruções
+
+| Atributo | Descrição |
+|----------|-----------|
+| MT       | Matriz alvo do carregamento (A ou B) |
+| M_Size   | Tamanho da matriz utilizado por operações de movimentação de dados e aritméticas |
+| OPCODE   | Código de operação |
+| Position |Posição do registrador utilizada por operações de movimentação de dados|
+|Num 1 | Número a ser inserido na matriz alvo|
+|Num 2 | Número a ser inserido na matriz alvo|
+
+A nova implementação exigiu uma reformulação na forma como os dados eram inseridos nos registradores e enviados ao processador. Essa mudança foi uma consequência direta da modificação no formato da instrução, que passou a incorporar informações adicionais sobre os dados e suas posições.
+
+A comunicação entre o processador e o coprocessador foi estruturada seguindo a metodologia mestre-escravo, onde o processador (mestre) envia instruções ao coprocessador (escravo), que as interpreta e executa. No caso das instruções do tipo `LOAD`, o processador transmite os valores das matrizes juntamente com suas posições codificadas dentro da própria instrução. O coprocessador então realiza o armazenamento desses valores nos registradores internos correspondentes.
+
+De forma análoga, a instrução `STORE` é utilizada para retornar os resultados ao processador. Nessa operação, o coprocessador empacota quatro bytes de resultado e os envia ao HPS, respeitando a posição especificada na instrução recebida. Esse modelo de comunicação direta e estruturada permitiu maior controle sobre o fluxo de dados, além de garantir eficiência e sincronização entre os módulos envolvidos.
+
+### 🔌 Comunicação Utilizada
+
+A comunicação desenvolvida, como já mencionado, segue a arquitetura mestre-escravo, na qual o processador (mestre) envia instruções ao coprocessador (escravo), responsável por processá-las e retornar os dados. Esse envio é realizado por meio do barramento **Lightweight HPS-to-FPGA (LW-H2F)**, uma interface AXI disponível na plataforma DE1-SoC.
+
+O barramento LW-H2F possui uma largura de 32 bits e foi projetado para transferências de controle e pequenos volumes de dados. Ele permite uma comunicação eficiente e simplificada entre o HPS (Hard Processor System) e a lógica programável da FPGA. Sua utilização neste projeto foi fundamental para garantir a troca rápida de comandos e dados entre as duas partes da placa, sem a necessidade de protocolos complexos.
+
+#### 📥 PIOs – Parallel Input/Output
+
+Outro componente essencial utilizado na comunicação foi o **PIO (Parallel Input/Output)**, disponível como periférico padrão no Platform Designer (Qsys) do Quartus. O PIO é um módulo simples que permite realizar leitura e escrita paralela de dados entre o HPS e a FPGA. Ele é amplamente utilizado para envio de sinais de controle, estados ou dados discretos em aplicações embarcadas.
+
+No contexto deste projeto, os PIOs desempenharam múltiplas funções:
+
+- Controle de sinais de sincronização entre o processador e o coprocessador (como “pronto” enviado pela FPGA), viabilizando um protocolo de handshaking confiável;
+- Transmissão das instruções montadas no processador para o coprocessador, permitindo a ativação direta das operações matriciais;
+- Envio de pacotes de bits do coprocessador para o HPS, contendo os resultados das operações, especialmente nos casos de instruções do tipo `STORE`.
+
+Essa abordagem multifuncional com os PIOs proporcionou flexibilidade na comunicação e reduziu a complexidade de controle interno do sistema. O uso combinado do barramento AXI e dos PIOs resultou em um canal de comunicação robusto, eficiente e altamente adaptado às exigências do projeto.
+#### 🤝 Protocolo de Handshaking
+
+O protocolo de handshaking implementado entre o HPS e o coprocessador (FPGA) segue os seguintes passos:
+
+1. **Envio da instrução**  
+   - O HPS monta a instrução em Assembly e a escreve nos registradores via barramento e PIOs.  
+   - Em seguida, o HPS aciona o sinal `Start` (coloca `Start = 1`) para indicar que há uma nova operação a ser executada.
+
+2. **Modo de espera do HPS**  
+   - Após ativar `Start`, o HPS entra em loop de espera, monitorando o sinal `Done_operation` vindo do coprocessador.
+
+3. **Processamento pelo coprocessador**  
+   - O coprocessador, ao detectar `Start = 1`, lê a instrução e executa a operação correspondente.  
+   - Durante a execução, o coprocessador mantém `Done_operation = 0`.
+
+4. **Conclusão da operação**  
+   - Quando o coprocessador finaliza o processamento (por exemplo, multiplicação matricial ou empacotamento de bytes), ele coloca `Done_operation = 1`.  
+   - Esse pulso indica ao HPS que a operação foi finalizada.
+
+5. **Reset do ciclo**  
+   - O HPS detecta `Done_operation = 1` e zera o sinal `Start` (`Start = 0`).  
+   - Após limpar `Start`, o HPS  fica pronto para enviar a próxima instrução.
+
+Esse fluxo garante sincronização precisa entre ambos os módulos, evitando condições de corrida e garantindo que cada instrução seja processada individualmente antes do envio da próxima.  
+
