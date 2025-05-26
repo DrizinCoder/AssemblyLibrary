@@ -3,6 +3,8 @@
 *.o
 *.core
 *.test.*
+*.png
+*.exe
 
 # Ignora executáveis gerado pelo Makefile em ambiente Linux
 main
