@@ -73,14 +73,20 @@ int main() {
                 printf("Entrada invalida. Por favor, insira um numero.\n");
                 continue;
             }
+            
+            char ouput_path[200];
 
             switch (choice) {
                 case 1:
-                    apply_filter(gray_img, width, height, "../images/output/output_laplacian.png", 1);
+                    snprintf(ouput_path, sizeof(ouput_path), "../images/output/laplacian_%s", input_path);
+
+                    apply_filter(gray_img, width, height, ouput_path, 1);
                     printf("Filtro Laplaciano aplicado e salvo como output_laplacian.png\n");
                     break;
                 case 2:
-                    apply_filter(gray_img, width, height, "../images/output/output_prewitt.png", 2);
+                    snprintf(ouput_path, sizeof(ouput_path), "../images/output/prewitt_%s", input_path);
+
+                    apply_filter(gray_img, width, height, ouput_path, 2);
                     printf("Filtro Prewitt (5x5) aplicado e salvo como output_prewitt.png\n");
                     break;
                 case 3:
@@ -125,10 +131,12 @@ void driver(const int8_t* kernel, const int8_t* region, int8_t* result, int size
 
 void apply_filter(unsigned char* gray_img, int width, int height, const char* output_path, int filter_type) {
     unsigned char* output = (unsigned char*)malloc(width * height * sizeof(unsigned char));
+    
     if (!output) {
         printf("Erro: Falha ao alocar memoria para a imagem de saida!\n");
         return;
     }
+
     memcpy(output, gray_img, width * height * sizeof(unsigned char));
 
     if (filter_type == 1) {
