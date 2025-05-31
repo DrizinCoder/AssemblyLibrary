@@ -111,21 +111,38 @@ void show_menu() {
 }
 
 void driver(const int8_t* kernel, const int8_t* region, int8_t* result, int size, int opcode) {
-        long long sum = 0;
-        for (int i = 0; i < size; i++) {
-            for (int e = 0; e < size; e++) {
-            
-            
-                sum += (long long)kernel[i * size + e] * region[i * size + e];
+        if(size == 1){
+            int sum = 0;
+            for (int i = 0; i < 3; i++) {
+                for (int e = 0; e < 3; e++) {
+                    sum += kernel[i * 3 + e] * region[i * 3 + e];
+                }
+            }
+        
+            if (sum >= 127) {
+                result[0] = 127;
+            } else if (sum <= 0) {
+                result[0] = 0;
+            } else {
+                result[0] = (int8_t)sum;
             }
         }
-    
-        if (sum >= 127) {
-            result[0] = 127;
-        } else if (sum <= 0) {
-            result[0] = 0;
-        } else {
-            result[0] = (int8_t)sum;
+
+        if(size == 3){
+            int sum = 0;
+            for (int i = 0; i < 5; i++) {
+                for (int e = 0; e < 5; e++) {
+                    sum += kernel[i * 5 + e] * region[i * 5 + e];
+                }
+            }
+        
+            if (sum >= 127) {
+                result[0] = 127;
+            } else if (sum <= 0) {
+                result[0] = 0;
+            } else {
+                result[0] = (int8_t)sum;
+            }
         }
 }
 
@@ -152,8 +169,8 @@ void apply_filter(unsigned char* gray_img, int width, int height, const char* ou
 }
 
 void apply_laplacian(unsigned char* gray_img, unsigned char* output, int width, int height) {
-
-    const int8_t laplacian_kernel[] = {
+    // Kernel Laplaciano
+    int8_t laplacian_kernel[] = {
         0, 0,  1, 0, 0,
         0, 1,  2, 1, 0,
         1, 2,-16, 2, 1,
@@ -161,84 +178,88 @@ void apply_laplacian(unsigned char* gray_img, unsigned char* output, int width, 
         0, 0,  1, 0, 0
     };
     
+    // Tamanho do kernel (5x5)
     int kernel_size = 5;
-    int half_kernel = kernel_size / 2;
 
+    // Metade do tamanho do kernel (para evitar processar bordas)
+    int half_kernel = kernel_size / 2; 
+
+    // Percorre cada pixel da imagem (exceto bordas)
     for (int y = half_kernel; y < height - half_kernel; y++) {
         for (int x = half_kernel; x < width - half_kernel; x++) {
+
+            // Extrai uma região 5x5 ao redor do pixel (y, x)
             int8_t region_s8[25];
+            
             int idx = 0;
             for (int ky = -half_kernel; ky <= half_kernel; ky++) {
                 for (int kx = -half_kernel; kx <= half_kernel; kx++) {
-                
+                    // Os pixels são convertidos para int8_t (-128 a 127) subtraindo 128
                     region_s8[idx++] = (int8_t)(gray_img[(y + ky) * width + (x + kx)] - 128);
                 }
             }
             
+            // Armazena o resultado da convolução
             int8_t convolution_result_s8_array[25];
-            driver(laplacian_kernel, region_s8, convolution_result_s8_array, kernel_size, 2);
-            
 
-            int abs_laplacian_val = abs((int)convolution_result_s8_array[0]);
-
-            int scaled_val = abs_laplacian_val * 2;
-            if (scaled_val > 255) {
-                scaled_val = 255;
-            }
+            // Aplica a convolução usando o kernel Laplaciano
+            driver(laplacian_kernel, region_s8, convolution_result_s8_array, 3, 2);
             
-            output[y * width + x] = (unsigned char)scaled_val;
+            // Armazena o resultado no pixel de saída (convertendo para 0-255)
+            output[y * width + x] = (unsigned char)convolution_result_s8_array[0];
         }
     }
 }
 
 void apply_prewitt(unsigned char* gray_img, unsigned char* output, int width, int height) {
-    const int8_t prewitt_x_kernel[] = {
-        0,  0,  0,  0,  0,
-        0, -1,  0,  1,  0,
-        0, -1,  0,  1,  0,
-        0, -1,  0,  1,  0,
-        0,  0,  0,  0,  0
+    // Kernels de Prewitt para detecção de bordas em X e Y
+    int8_t prewitt_x_kernel[] = {
+        1,  0,  -1,  
+        1,  0,  -1,
+        1,  0,  -1
     };
 
-    const int8_t prewitt_y_kernel[] = {
-        0,  0,  0,  0,  0,
-        0, -1, -1, -1,  0,
-        0,  0,  0,  0,  0,
-        0,  1,  1,  1,  0,
-        0,  0,  0,  0,  0
+    int8_t prewitt_y_kernel[] = {
+        -1, -1, -1,
+         0,  0,  0,  
+         1,  1,  1
     };
     
-    int kernel_size = 5;
+    // Tamanho do kernel (3x3)
+    int kernel_size = 3;
+
+    // Metade do tamanho do kernel (para evitar processar bordas)
     int half_kernel = kernel_size / 2;
 
+    // Percorre cada pixel da imagem (exceto bordas)
     for (int y = half_kernel; y < height - half_kernel; y++) {
         for (int x = half_kernel; x < width - half_kernel; x++) {
-            int8_t region_s8[25];
+
+            // Extrai uma região 3x3 ao redor do pixel (y, x)
+            int8_t region_s8[9];
             int idx = 0;
+            
             for (int ky = -half_kernel; ky <= half_kernel; ky++) {
                 for (int kx = -half_kernel; kx <= half_kernel; kx++) {
-                
+                    // Converte pixels para int8_t (-128 a 127) subtraindo 128
                     region_s8[idx++] = (int8_t)(gray_img[(y + ky) * width + (x + kx)] - 128);
                 }
             }
             
-            int8_t result_x_s8_array[25];
-            int8_t result_y_s8_array[25];
-            driver(prewitt_x_kernel, region_s8, result_x_s8_array, kernel_size, 2);
-            driver(prewitt_y_kernel, region_s8, result_y_s8_array, kernel_size, 2);
+            // Resultados das convoluções em X e Y
+            int8_t gx_result[9], gy_result[9];
             
-
-            double magnitude_double = sqrt((double)result_x_s8_array[0] * result_x_s8_array[0] + (double)result_y_s8_array[0] * result_y_s8_array[0]);
-            int magnitude = (int)magnitude_double;
+            // Aplica convolução nas direções X e Y
+            driver(prewitt_x_kernel, region_s8, gx_result, 1, 2);
+            driver(prewitt_y_kernel, region_s8, gy_result, 1, 2);
             
-        
-            if (magnitude > 255) {
-                output[y * width + x] = 255;
-            } else if (magnitude < 0) {
-                output[y * width + x] = 0;
-            } else {
-                output[y * width + x] = (unsigned char)magnitude;
-            }
+            // Calcula a magnitude do gradiente (aproximação)
+            int16_t gx = gx_result[0];
+            int16_t gy = gy_result[0];
+            int16_t magnitude = abs(gx) + abs(gy);
+            
+            // Armazena o resultado (0-255)
+            output[y * width + x] = (unsigned char)(magnitude);   
         }
     }
 }
