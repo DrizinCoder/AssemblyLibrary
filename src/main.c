@@ -13,6 +13,8 @@ void show_menu();
 void apply_filter(unsigned char* gray_img, int width, int height, const char* output_path, int filter_type);
 void apply_laplacian(unsigned char* gray_img, unsigned char* output, int width, int height);
 void apply_prewitt(unsigned char* gray_img, unsigned char* output, int width, int height);
+void apply_sobel_3x3(unsigned char* gray_img, unsigned char* output, int width, int height);
+void apply_sobel_5x5(unsigned char* gray_img, unsigned char* output, int width, int height); 
 unsigned char* convert_to_grayscale(const char* input_path, int* width, int* height);
 
 
@@ -81,15 +83,27 @@ int main() {
                     snprintf(ouput_path, sizeof(ouput_path), "../images/output/laplacian_%s", input_path);
 
                     apply_filter(gray_img, width, height, ouput_path, 1);
-                    printf("Filtro Laplaciano aplicado e salvo como output_laplacian.png\n");
+                    printf("Filtro Laplaciano aplicado e salvo como laplacian_name.png\n");
                     break;
                 case 2:
                     snprintf(ouput_path, sizeof(ouput_path), "../images/output/prewitt_%s", input_path);
 
                     apply_filter(gray_img, width, height, ouput_path, 2);
-                    printf("Filtro Prewitt (5x5) aplicado e salvo como output_prewitt.png\n");
+                    printf("Filtro Prewitt (5x5) aplicado e salvo como prewitt_name.png\n");
                     break;
                 case 3:
+                    snprintf(ouput_path, sizeof(ouput_path), "../images/output/sobel3x3_%s", input_path);
+
+                    apply_filter(gray_img, width, height, ouput_path, 3);
+                    printf("Filtro Prewitt (5x5) aplicado e salvo como sobel3x3_name.png\n");
+                    break;
+                case 4:
+                    snprintf(ouput_path, sizeof(ouput_path), "../images/output/sobel5x5_%s", input_path);
+
+                    apply_filter(gray_img, width, height, ouput_path, 4);
+                    printf("Filtro Prewitt (5x5) aplicado e salvo como sobel5x5_name.png\n");
+                    break;
+                case 0:
                     printf("Retornando ao menu principal...\n\n");
                     break;
                 default:
@@ -107,7 +121,9 @@ void show_menu() {
     printf("\n=== MENU DE FILTROS ===\n");
     printf("1 - Aplicar Filtro Laplaciano (5x5)\n");
     printf("2 - Aplicar Filtro Prewitt (5x5)\n");
-    printf("3 - Voltar ao menu principal\n");
+    printf("3 - Aplicar Filtro Sobel (3x3)\n");
+    printf("4 - Aplicar Filtro Sobel (5x5)\n");
+    printf("0 - Voltar ao menu principal\n");
 }
 
 void driver(const int8_t* kernel, const int8_t* region, int8_t* result, int size, int opcode) {
@@ -160,6 +176,10 @@ void apply_filter(unsigned char* gray_img, int width, int height, const char* ou
         apply_laplacian(gray_img, output, width, height);
     } else if (filter_type == 2) {
         apply_prewitt(gray_img, output, width, height);
+    } else if (filter_type == 3) {
+        apply_sobel_3x3(gray_img, output, width, height);
+    } else if (filter_type == 4) {
+        apply_sobel_5x5(gray_img, output, width, height);
     }
 
     if (!stbi_write_jpg(output_path, width, height, 1, output, 90)) {
@@ -260,6 +280,93 @@ void apply_prewitt(unsigned char* gray_img, unsigned char* output, int width, in
             
             // Armazena o resultado (0-255)
             output[y * width + x] = (unsigned char)(magnitude);   
+        }
+    }
+}
+
+void apply_sobel_3x3(unsigned char* gray_img, unsigned char* output, int width, int height) {
+    int8_t sobel_x_kernel_3x3[] = {
+        -1, 0, 1,
+        -2, 0, 2,
+        -1, 0, 1
+    };
+    int8_t sobel_y_kernel_3x3[] = {
+        -1, -2, -1,
+         0, 0, 0,
+         1, 2, 1
+    };
+
+    int size = 3;
+    int border = size / 2;
+
+    for (int y = border; y < height - border; y++) {
+        for (int x = border; x < width - border; x++) {
+            int region[9]; // 3x3
+            int idx = 0;
+            for (int ky = -border; ky <= border; ky++) {
+                for (int kx = -border; kx <= border; kx++) {
+                    region[idx++] = gray_img[(y + ky) * width + (x + kx)];
+                }
+            }
+
+            int8_t result_x = 0, result_y = 0;
+            // Assuming the driver function handles the convolution
+            // and the opcode '1' signifies this type of operation.
+            driver(sobel_x_kernel_3x3, region, &result_x, size, 1);
+            driver(sobel_y_kernel_3x3, region, &result_y, size, 1);
+
+            // Calculate gradient magnitude
+            // G = sqrt(Gx^2 + Gy^2)
+            // The C driver clamps Gx and Gy results to [0,255].
+            int8_t magnitude = (int)sqrt((double)result_x * result_x + (double)result_y * result_y);
+
+            // Clamp the magnitude to [0, 255] and assign to output
+            output[y * width + x] = (unsigned char)(magnitude > 255 ? 255 : (magnitude < 0 ? 0 : magnitude));  
+        }
+    }
+}
+
+void apply_sobel_5x5(unsigned char* gray_img, unsigned char* output, int width, int height) {
+   // Using Scharr 5x5 kernels as a common, optimized Sobel-like operator for 5x5
+   int8_t sobel_x_kernel_5x5[] = {
+    1, 2, 0, -2, -1,
+    4, 8, 0, -8, -4,
+    6, 12, 0, -12, -6,
+    4, 8, 0, -8, -4,
+    1, 2, 0, -2, -1
+    };
+
+    int8_t sobel_y_kernel_5x5[] = {
+    1, 4, 6, 4, 1,
+    2, 8, 12, 8, 2,
+    0, 0, 0, 0, 0,
+    -2, -8,-12, -8, -2,
+    -1, -4, -6, -4, -1
+    };
+
+    int size = 5; // Kernel size
+    int border = size / 2; // 2 for 5x5
+
+    for (int y = border; y < height - border; y++) {
+    for (int x = border; x < width - border; x++) {
+        int region[25]; // 5x5 = 25 elements
+        int idx = 0;
+        for (int ky = -border; ky <= border; ky++) {
+            for (int kx = -border; kx <= border; kx++) {
+                region[idx++] = gray_img[(y + ky) * width + (x + kx)];
+            }
+        }
+
+        int8_t result_x = 0, result_y = 0;
+        driver(sobel_x_kernel_5x5, region, &result_x, size, 1);
+        driver(sobel_y_kernel_5x5, region, &result_y, size, 1);
+
+        // Calculate gradient magnitude: G = sqrt(Gx^2 + Gy^2)
+        // The C driver clamps Gx and Gy results to [0,255].
+        int8_t magnitude = (int)sqrt((double)result_x * result_x + (double)result_y * result_y);
+
+        // Clamp the magnitude to [0, 255] and assign to output
+        output[y * width + x] = (unsigned char)(magnitude > 255 ? 255 : (magnitude < 0 ? 0 : magnitude));
         }
     }
 }
