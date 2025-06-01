@@ -178,7 +178,7 @@ void driver(const int8_t* kernel, const int8_t* region, int8_t* result, int size
             }
         
             if (sum >= 127) {
-                result[0] = 127;
+                result[0] = 255;
             } else if (sum <= 0) {
                 result[0] = 0;
             } else {
@@ -303,7 +303,7 @@ void apply_prewitt(unsigned char* gray_img, unsigned char* output, int width, in
             // Calcula a magnitude do gradiente (aproximação)
             int16_t gx = gx_result[0];
             int16_t gy = gy_result[0];
-            int16_t magnitude = abs(gx) + abs(gy);
+            int16_t magnitude = sqrt(pow(gx, 2) + pow(gy, 2));
             
             // Armazena o resultado (0-255)
             output[y * width + x] = (unsigned char)(magnitude);   
@@ -407,7 +407,7 @@ void apply_sobel_3x3(unsigned char* gray_img, unsigned char* output, int width, 
             // Calcula a magnitude do gradiente (aproximação)
             int16_t gx = gx_result[0];
             int16_t gy = gy_result[0];
-            int16_t magnitude = abs(gx) + abs(gy);
+            int16_t magnitude = sqrt(pow(gx, 2) + pow(gy, 2));
             
             // Clamp para range válido (0-255)
             if (magnitude > 255) magnitude = 255;
@@ -467,7 +467,7 @@ void apply_sobel_5x5(unsigned char* gray_img, unsigned char* output, int width, 
             // Calcula a magnitude do gradiente (aproximação)
             int16_t gx = gx_result[0];
             int16_t gy = gy_result[0];
-            int16_t magnitude = abs(gx) + abs(gy);
+            int16_t magnitude = sqrt(pow(gx, 2) + pow(gy, 2));
             
             // Clamp para range válido (0-255)
             if (magnitude > 255) magnitude = 255;
