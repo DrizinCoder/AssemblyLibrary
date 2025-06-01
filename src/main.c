@@ -13,6 +13,9 @@ void show_menu();
 void apply_filter(unsigned char* gray_img, int width, int height, const char* output_path, int filter_type);
 void apply_laplacian(unsigned char* gray_img, unsigned char* output, int width, int height);
 void apply_prewitt(unsigned char* gray_img, unsigned char* output, int width, int height);
+void apply_roberts(unsigned char* gray_img, unsigned char* output, int width, int height);
+void apply_sobel_3x3(unsigned char* gray_img, unsigned char* output, int width, int height);
+void apply_sobel_5x5(unsigned char* gray_img, unsigned char* output, int width, int height); 
 unsigned char* convert_to_grayscale(const char* input_path, int* width, int* height);
 
 
@@ -65,7 +68,7 @@ int main() {
         }
 
         int choice = 0;
-        while (choice != 3) {
+        while (choice != 4) {
             show_menu();
             printf("\nEscolha uma opcao: ");
             if (scanf("%d", &choice) != 1) {
@@ -90,6 +93,12 @@ int main() {
                     printf("Filtro Prewitt (5x5) aplicado e salvo como output_prewitt.png\n");
                     break;
                 case 3:
+                    snprintf(ouput_path, sizeof(ouput_path), "../images/output/roberts_%s", input_path);
+
+                    apply_filter(gray_img, width, height, ouput_path, 3);
+                    printf("Filtro Roberts (2x2) aplicado e salvo como output_roberts.png\n");
+                    break;
+                case 4:
                     printf("Retornando ao menu principal...\n\n");
                     break;
                 default:
@@ -107,7 +116,8 @@ void show_menu() {
     printf("\n=== MENU DE FILTROS ===\n");
     printf("1 - Aplicar Filtro Laplaciano (5x5)\n");
     printf("2 - Aplicar Filtro Prewitt (5x5)\n");
-    printf("3 - Voltar ao menu principal\n");
+    printf("3 - Aplicar Filtro Roberts (2x2)\n");
+    printf("4 - Voltar ao menu principal\n");
 }
 
 void driver(const int8_t* kernel, const int8_t* region, int8_t* result, int size, int opcode) {
@@ -144,6 +154,23 @@ void driver(const int8_t* kernel, const int8_t* region, int8_t* result, int size
                 result[0] = (int8_t)sum;
             }
         }
+
+        if(size == 0){
+            int sum = 0;
+            for (int i = 0; i < 2; i++) {
+                for (int e = 0; e < 2; e++) {
+                    sum += kernel[i * 2 + e] * region[i * 2 + e];
+                }
+            }
+        
+            if (sum >= 127) {
+                result[0] = 127;
+            } else if (sum <= 0) {
+                result[0] = 0;
+            } else {
+                result[0] = (int8_t)sum;
+            }
+        }
 }
 
 void apply_filter(unsigned char* gray_img, int width, int height, const char* output_path, int filter_type) {
@@ -160,6 +187,8 @@ void apply_filter(unsigned char* gray_img, int width, int height, const char* ou
         apply_laplacian(gray_img, output, width, height);
     } else if (filter_type == 2) {
         apply_prewitt(gray_img, output, width, height);
+    } else if (filter_type == 3) {
+        apply_roberts(gray_img, output, width, height);
     }
 
     if (!stbi_write_jpg(output_path, width, height, 1, output, 90)) {
@@ -257,6 +286,57 @@ void apply_prewitt(unsigned char* gray_img, unsigned char* output, int width, in
             int16_t gx = gx_result[0];
             int16_t gy = gy_result[0];
             int16_t magnitude = abs(gx) + abs(gy);
+            
+            // Armazena o resultado (0-255)
+            output[y * width + x] = (unsigned char)(magnitude);   
+        }
+    }
+}
+
+void apply_roberts(unsigned char* gray_img, unsigned char* output, int width, int height) {
+    // Kernels de Roberts para detecção de bordas
+    int8_t roberts_x_kernel[] = {
+        1,  0,
+        0, -1
+    };
+
+    int8_t roberts_y_kernel[] = {
+        0,  1,
+       -1,  0
+    };
+    
+    // Tamanho do kernel (2x2)
+    int kernel_size = 2;
+
+    // Percorre cada pixel da imagem (exceto última linha e coluna)
+    for (int y = 0; y < height - 1; y++) {
+        for (int x = 0; x < width - 1; x++) {
+
+            // Extrai uma região 2x2 ao redor do pixel (y, x)
+            int8_t region_s8[4];
+            int idx = 0;
+            
+            for (int ky = 0; ky < kernel_size; ky++) {
+                for (int kx = 0; kx < kernel_size; kx++) {
+                    // Converte pixels para int8_t (-128 a 127) subtraindo 128
+                    region_s8[idx++] = (int8_t)(gray_img[(y + ky) * width + (x + kx)] - 128);
+                }
+            }
+            
+            // Resultados das convoluções em X e Y
+            int8_t gx_result[4], gy_result[4];
+            
+            // Aplica convolução nas direções X e Y
+            driver(roberts_x_kernel, region_s8, gx_result, 0, 2);
+            driver(roberts_y_kernel, region_s8, gy_result, 0, 2);
+            
+            // Calcula a magnitude do gradiente (aproximação)
+            int16_t gx = gx_result[0];
+            int16_t gy = gy_result[0];
+            int16_t magnitude = abs(gx) + abs(gy);
+            
+            // Clamp para range válido (0-255)
+            if (magnitude > 255) magnitude = 255;
             
             // Armazena o resultado (0-255)
             output[y * width + x] = (unsigned char)(magnitude);   
