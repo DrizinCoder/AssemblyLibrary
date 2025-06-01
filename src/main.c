@@ -15,7 +15,7 @@ void apply_laplacian(unsigned char* gray_img, unsigned char* output, int width, 
 void apply_prewitt(unsigned char* gray_img, unsigned char* output, int width, int height);
 void apply_roberts(unsigned char* gray_img, unsigned char* output, int width, int height);
 void apply_sobel_3x3(unsigned char* gray_img, unsigned char* output, int width, int height);
-void apply_sobel_5x5(unsigned char* gray_img, unsigned char* output, int width, int height); 
+void apply_sobel_5x5(unsigned char* gray_img, unsigned char* output, int width, int height);
 unsigned char* convert_to_grayscale(const char* input_path, int* width, int* height);
 
 
@@ -68,7 +68,7 @@ int main() {
         }
 
         int choice = 0;
-        while (choice != 4) {
+        while (choice != 6) {
             show_menu();
             printf("\nEscolha uma opcao: ");
             if (scanf("%d", &choice) != 1) {
@@ -99,6 +99,18 @@ int main() {
                     printf("Filtro Roberts (2x2) aplicado e salvo como output_roberts.png\n");
                     break;
                 case 4:
+                    snprintf(ouput_path, sizeof(ouput_path), "../images/output/sobel3x3_%s", input_path);
+
+                    apply_filter(gray_img, width, height, ouput_path, 4);
+                    printf("Filtro Sobel (3x3) aplicado e salvo como output_sobel3x3.png\n");
+                    break;
+                case 5:
+                    snprintf(ouput_path, sizeof(ouput_path), "../images/output/sobel5x5_%s", input_path);
+
+                    apply_filter(gray_img, width, height, ouput_path, 5);
+                    printf("Filtro Sobel (5x5) aplicado e salvo como output_sobel5x5.png\n");
+                    break;
+                case 6:
                     printf("Retornando ao menu principal...\n\n");
                     break;
                 default:
@@ -117,7 +129,9 @@ void show_menu() {
     printf("1 - Aplicar Filtro Laplaciano (5x5)\n");
     printf("2 - Aplicar Filtro Prewitt (5x5)\n");
     printf("3 - Aplicar Filtro Roberts (2x2)\n");
-    printf("4 - Voltar ao menu principal\n");
+    printf("4 - Aplicar Filtro Sobel (3x3)\n");
+    printf("5 - Aplicar Filtro Sobel (5x5)\n");
+    printf("6 - Voltar ao menu principal\n");
 }
 
 void driver(const int8_t* kernel, const int8_t* region, int8_t* result, int size, int opcode) {
@@ -189,6 +203,10 @@ void apply_filter(unsigned char* gray_img, int width, int height, const char* ou
         apply_prewitt(gray_img, output, width, height);
     } else if (filter_type == 3) {
         apply_roberts(gray_img, output, width, height);
+    } else if (filter_type == 4) {
+        apply_sobel_3x3(gray_img, output, width, height);
+    } else if (filter_type == 5) {
+        apply_sobel_5x5(gray_img, output, width, height);
     }
 
     if (!stbi_write_jpg(output_path, width, height, 1, output, 90)) {
@@ -329,6 +347,122 @@ void apply_roberts(unsigned char* gray_img, unsigned char* output, int width, in
             // Aplica convolução nas direções X e Y
             driver(roberts_x_kernel, region_s8, gx_result, 0, 2);
             driver(roberts_y_kernel, region_s8, gy_result, 0, 2);
+            
+            // Calcula a magnitude do gradiente (aproximação)
+            int16_t gx = gx_result[0];
+            int16_t gy = gy_result[0];
+            int16_t magnitude = sqrt(pow(gx, 2) + pow(gy, 2));
+            
+            // Clamp para range válido (0-255)
+            if (magnitude > 255) magnitude = 255;
+            
+            // Armazena o resultado (0-255)
+            output[y * width + x] = (unsigned char)(magnitude);   
+        }
+    }
+}
+
+void apply_sobel_3x3(unsigned char* gray_img, unsigned char* output, int width, int height) {
+    // Kernels de Sobel para detecção de bordas em X e Y
+    int8_t sobel_x_kernel[] = {
+        -1,  0,  1,  
+        -2,  0,  2,
+        -1,  0,  1
+    };
+
+    int8_t sobel_y_kernel[] = {
+        -1, -2, -1,
+         0,  0,  0,  
+         1,  2,  1
+    };
+    
+    // Tamanho do kernel (3x3)
+    int kernel_size = 3;
+
+    // Metade do tamanho do kernel (para evitar processar bordas)
+    int half_kernel = kernel_size / 2;
+
+    // Percorre cada pixel da imagem (exceto bordas)
+    for (int y = half_kernel; y < height - half_kernel; y++) {
+        for (int x = half_kernel; x < width - half_kernel; x++) {
+
+            // Extrai uma região 3x3 ao redor do pixel (y, x)
+            int8_t region_s8[9];
+            int idx = 0;
+            
+            for (int ky = -half_kernel; ky <= half_kernel; ky++) {
+                for (int kx = -half_kernel; kx <= half_kernel; kx++) {
+                    // Converte pixels para int8_t (-128 a 127) subtraindo 128
+                    region_s8[idx++] = (int8_t)(gray_img[(y + ky) * width + (x + kx)] - 128);
+                }
+            }
+            
+            // Resultados das convoluções em X e Y
+            int8_t gx_result[9], gy_result[9];
+            
+            // Aplica convolução nas direções X e Y
+            driver(sobel_x_kernel, region_s8, gx_result, 1, 2);
+            driver(sobel_y_kernel, region_s8, gy_result, 1, 2);
+            
+            // Calcula a magnitude do gradiente (aproximação)
+            int16_t gx = gx_result[0];
+            int16_t gy = gy_result[0];
+            int16_t magnitude = abs(gx) + abs(gy);
+            
+            // Clamp para range válido (0-255)
+            if (magnitude > 255) magnitude = 255;
+            
+            // Armazena o resultado (0-255)
+            output[y * width + x] = (unsigned char)(magnitude);   
+        }
+    }
+}
+
+void apply_sobel_5x5(unsigned char* gray_img, unsigned char* output, int width, int height) {
+    // Kernels de Sobel expandidos para detecção de bordas em X e Y (5x5)
+    int8_t sobel_x_kernel[] = {
+        -1, -2,  0,  2,  1,
+        -2, -3,  0,  3,  2,
+        -3, -5,  0,  5,  3,
+        -2, -3,  0,  3,  2,
+        -1, -2,  0,  2,  1
+    };
+
+    int8_t sobel_y_kernel[] = {
+        -1, -2, -3, -2, -1,
+        -2, -3, -5, -3, -2,
+         0,  0,  0,  0,  0,
+         2,  3,  5,  3,  2,
+         1,  2,  3,  2,  1
+    };
+    
+    // Tamanho do kernel (5x5)
+    int kernel_size = 5;
+
+    // Metade do tamanho do kernel (para evitar processar bordas)
+    int half_kernel = kernel_size / 2;
+
+    // Percorre cada pixel da imagem (exceto bordas)
+    for (int y = half_kernel; y < height - half_kernel; y++) {
+        for (int x = half_kernel; x < width - half_kernel; x++) {
+
+            // Extrai uma região 5x5 ao redor do pixel (y, x)
+            int8_t region_s8[25];
+            int idx = 0;
+            
+            for (int ky = -half_kernel; ky <= half_kernel; ky++) {
+                for (int kx = -half_kernel; kx <= half_kernel; kx++) {
+                    // Converte pixels para int8_t (-128 a 127) subtraindo 128
+                    region_s8[idx++] = (int8_t)(gray_img[(y + ky) * width + (x + kx)] - 128);
+                }
+            }
+            
+            // Resultados das convoluções em X e Y
+            int8_t gx_result[25], gy_result[25];
+            
+            // Aplica convolução nas direções X e Y
+            driver(sobel_x_kernel, region_s8, gx_result, 3, 2);
+            driver(sobel_y_kernel, region_s8, gy_result, 3, 2);
             
             // Calcula a magnitude do gradiente (aproximação)
             int16_t gx = gx_result[0];
