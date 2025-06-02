@@ -255,12 +255,13 @@ void apply_prewitt(unsigned char* gray_img, unsigned char* output, int width, in
 
     // Percorre cada pixel da imagem (exceto bordas)
     for (int y = half_kernel; y < height - half_kernel; y++) {
+        int count = 0;
+        
         for (int x = half_kernel; x < width - half_kernel; x++) {
-
             // Extrai uma região 3x3 ao redor do pixel (y, x)
             int8_t region_s8[9];
             int idx = 0;
-            
+
             for (int ky = -half_kernel; ky <= half_kernel; ky++) {
                 for (int kx = -half_kernel; kx <= half_kernel; kx++) {
                     // Converte pixels para int8_t (-128 a 127) subtraindo 128
@@ -274,6 +275,9 @@ void apply_prewitt(unsigned char* gray_img, unsigned char* output, int width, in
             // Aplica convolução nas direções X e Y
             driver(prewitt_x_kernel, region_s8, gx_result, 1, 2);
             driver(prewitt_y_kernel, region_s8, gy_result, 1, 2);
+
+            printf("\ncount %d\nsum x: %hhd\nsum y: %hhd", count, gx_result[0], gy_result[0]);
+            count += 1;
             
             // Calcula a magnitude do gradiente (aproximação)
             int16_t gx = gx_result[0];
