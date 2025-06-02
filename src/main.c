@@ -66,8 +66,8 @@ int main() {
             continue;
         }
 
-        int choice = 0;
-        while (choice != 3) {
+        int choice = 10;
+        while (choice != 0) {
             show_menu();
             printf("\nEscolha uma opcao: ");
             if (scanf("%d", &choice) != 1) {
@@ -180,6 +180,8 @@ void apply_filter(unsigned char* gray_img, int width, int height, const char* ou
         apply_sobel_3x3(gray_img, output, width, height);
     } else if (filter_type == 4) {
         apply_sobel_5x5(gray_img, output, width, height);
+    }else{
+        
     }
 
     if (!stbi_write_jpg(output_path, width, height, 1, output, 90)) {
@@ -234,9 +236,9 @@ void apply_laplacian(unsigned char* gray_img, unsigned char* output, int width, 
 void apply_prewitt(unsigned char* gray_img, unsigned char* output, int width, int height) {
     // Kernels de Prewitt para detecção de bordas em X e Y
     int8_t prewitt_x_kernel[] = {
-        1,  0,  -1,  
-        1,  0,  -1,
-        1,  0,  -1
+        -1,  0,  1,  
+        -1,  0,  1,
+        -1,  0,  1
     };
 
     int8_t prewitt_y_kernel[] = {
