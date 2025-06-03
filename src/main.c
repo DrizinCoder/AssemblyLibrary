@@ -66,6 +66,10 @@ int main() {
             continue;
         }
 
+        if (!stbi_write_jpg("../images/gray/gray.jpg", width, height, 1, gray_img, 90)) {
+            printf("Erro ao salvar a imagem cinza\n");
+        }
+
         int choice = 10;
         while (choice != 0) {
             show_menu();
@@ -187,6 +191,7 @@ void apply_filter(unsigned char* gray_img, int width, int height, const char* ou
     if (!stbi_write_jpg(output_path, width, height, 1, output, 90)) {
         printf("Erro ao salvar a imagem filtrada em %s!\n", output_path);
     }
+
     free(output);
 }
 
@@ -236,15 +241,15 @@ void apply_laplacian(unsigned char* gray_img, unsigned char* output, int width, 
 void apply_prewitt(unsigned char* gray_img, unsigned char* output, int width, int height) {
     // Kernels de Prewitt para detecção de bordas em X e Y
     int8_t prewitt_x_kernel[] = {
-        -1,  0,  1,  
-        -1,  0,  1,
-        -1,  0,  1
+        -1, -1, -1,  
+         0,  0,  0,
+         1,  1,  1
     };
 
     int8_t prewitt_y_kernel[] = {
-        -1, -1, -1,
-         0,  0,  0,  
-         1,  1,  1
+        -1,  0,  1,
+        -1,  0,  1,  
+        -1,  0,  1
     };
     
     // Tamanho do kernel (3x3)
@@ -255,7 +260,6 @@ void apply_prewitt(unsigned char* gray_img, unsigned char* output, int width, in
 
     // Percorre cada pixel da imagem (exceto bordas)
     for (int y = half_kernel; y < height - half_kernel; y++) {
-        int count = 0;
         
         for (int x = half_kernel; x < width - half_kernel; x++) {
             // Extrai uma região 3x3 ao redor do pixel (y, x)
@@ -276,9 +280,6 @@ void apply_prewitt(unsigned char* gray_img, unsigned char* output, int width, in
             driver(prewitt_x_kernel, region_s8, gx_result, 1, 2);
             driver(prewitt_y_kernel, region_s8, gy_result, 1, 2);
 
-            printf("\ncount %d\nsum x: %hhd\nsum y: %hhd", count, gx_result[0], gy_result[0]);
-            count += 1;
-            
             // Calcula a magnitude do gradiente (aproximação)
             int16_t gx = gx_result[0];
             int16_t gy = gy_result[0];
@@ -386,7 +387,7 @@ unsigned char* convert_to_grayscale(const char* input_path, int* width, int* hei
         printf("STB Image Error: %s\n", stbi_failure_reason());
         return NULL;
     }
-
+    
     printf("Imagem %s carregada: %dpx x %dpx, Canais Originais: %d, Convertida para Escala de Cinza\n", input_path, *width, *height, channels);
     return img;
 }
