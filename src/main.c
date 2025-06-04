@@ -19,7 +19,7 @@ unsigned char* convert_to_grayscale(const char* input_path, int* width, int* hei
 
 
 
-void driver(const int8_t* kernel, const int8_t* region, int8_t* result, int size, int opcode);
+void driver( int8_t* kernel,  int8_t* region, int8_t* result, int size, int opcode);
 
 // extern void mmap_setup();
 // extern void driver(int8_t *matrixA, int8_t *matrixB, int8_t *matrixR, int size, int op_opcode);
@@ -130,7 +130,7 @@ void show_menu() {
     printf("0 - Voltar ao menu principal\n");
 }
 
-void driver(const int8_t* kernel, const int8_t* region, int8_t* result, int size, int opcode) {
+void driver( int8_t* kernel,  int8_t* region, int8_t* result, int size, int opcode) {
         if(size == 1){
             int sum = 0;
             for (int i = 0; i < 3; i++) {
@@ -138,7 +138,7 @@ void driver(const int8_t* kernel, const int8_t* region, int8_t* result, int size
                     sum += kernel[i * 3 + e] * region[i * 3 + e];
                 }
             }
-        
+            
             if (sum >= 127) {
                 result[0] = 127;
             } else if (sum <= 0) {
@@ -299,85 +299,88 @@ void apply_sobel_3x3(unsigned char* gray_img, unsigned char* output, int width, 
     };
     int8_t sobel_y_kernel_3x3[] = {
         -1, -2, -1,
-         0, 0, 0,
-         1, 2, 1
+         0,  0,  0,
+         1,  2,  1
     };
 
-    int size = 3;
-    int border = size / 2;
+    int kernel_s = 3; // Renomeado de 'size' para evitar conflito com parâmetro do driver
+    int border = kernel_s / 2;
 
     for (int y = border; y < height - border; y++) {
         for (int x = border; x < width - border; x++) {
-            int region[9]; // 3x3
+            int8_t region_s8[9]; // Região 3x3 como int8_t
             int idx = 0;
             for (int ky = -border; ky <= border; ky++) {
                 for (int kx = -border; kx <= border; kx++) {
-                    region[idx++] = gray_img[(y + ky) * width + (x + kx)];
+                    // Converter pixel da imagem (0-255) para int8_t (-128 a 127)
+                    region_s8[idx++] = (int8_t)(gray_img[(y + ky) * width + (x + kx)] - 128);
                 }
             }
 
-            int8_t result_x = 0, result_y = 0;
-            // Assuming the driver function handles the convolution
-            // and the opcode '1' signifies this type of operation.
-            driver(sobel_x_kernel_3x3, region, &result_x, size, 1);
-            driver(sobel_y_kernel_3x3, region, &result_y, size, 1);
+            int8_t gx_result_array[9]; 
+            int8_t gy_result_array[9]; 
+            
+            
+            driver(sobel_x_kernel_3x3, region_s8, gx_result_array, 1, 2); 
+            driver(sobel_y_kernel_3x3, region_s8, gy_result_array, 1, 2); 
 
-            // Calculate gradient magnitude
-            // G = sqrt(Gx^2 + Gy^2)
-            // The C driver clamps Gx and Gy results to [0,255].
-            int8_t magnitude = (int)sqrt((double)result_x * result_x + (double)result_y * result_y);
+            int8_t gx = gx_result_array[0];
+            int8_t gy = gy_result_array[0];
 
-            // Clamp the magnitude to [0, 255] and assign to output
-            output[y * width + x] = (unsigned char)(magnitude > 255 ? 255 : (magnitude < 0 ? 0 : magnitude));  
+            // Calcular a magnitude. sqrt retorna double.
+            int8_t magnitude = (int)sqrt((double)gx * gx + (double)gy * gy);
+
+        
+            output[y * width + x] = magnitude;
         }
     }
 }
 
 void apply_sobel_5x5(unsigned char* gray_img, unsigned char* output, int width, int height) {
-   // Using Scharr 5x5 kernels as a common, optimized Sobel-like operator for 5x5
-   int8_t sobel_x_kernel_5x5[] = {
-    1, 2, 0, -2, -1,
-    4, 8, 0, -8, -4,
-    6, 12, 0, -12, -6,
-    4, 8, 0, -8, -4,
-    1, 2, 0, -2, -1
+    int8_t sobel_x_kernel_5x5[] = {
+        1,  2,  0,  -2, -1,
+        4,  8,  0,  -8, -4,
+        6, 12,  0, -12, -6,
+        4,  8,  0,  -8, -4,
+        1,  2,  0,  -2, -1
     };
 
     int8_t sobel_y_kernel_5x5[] = {
-    1, 4, 6, 4, 1,
-    2, 8, 12, 8, 2,
-    0, 0, 0, 0, 0,
-    -2, -8,-12, -8, -2,
-    -1, -4, -6, -4, -1
+        1,  4,  6,  4,  1,
+        2,  8, 12,  8,  2,
+        0,  0,  0,  0,  0,
+       -2, -8,-12, -8, -2,
+       -1, -4, -6, -4, -1
     };
 
-    int size = 5; // Kernel size
-    int border = size / 2; // 2 for 5x5
+    int kernel_s = 5; 
+    int border = kernel_s / 2; 
 
     for (int y = border; y < height - border; y++) {
-    for (int x = border; x < width - border; x++) {
-        int region[25]; // 5x5 = 25 elements
-        int idx = 0;
-        for (int ky = -border; ky <= border; ky++) {
-            for (int kx = -border; kx <= border; kx++) {
-                region[idx++] = gray_img[(y + ky) * width + (x + kx)];
+        for (int x = border; x < width - border; x++) {
+            int8_t region_s8[25]; // Região 5x5 como int8_t
+            int idx = 0;
+            for (int ky = -border; ky <= border; ky++) {
+                for (int kx = -border; kx <= border; kx++) {
+                    region_s8[idx++] = (int8_t)(gray_img[(y + ky) * width + (x + kx)] - 128);
+                }
             }
-        }
 
-        int8_t result_x = 0, result_y = 0;
-        driver(sobel_x_kernel_5x5, region, &result_x, size, 1);
-        driver(sobel_y_kernel_5x5, region, &result_y, size, 1);
+            int8_t gx_result_array[25]; // Array para receber o resultado de Gx
+            int8_t gy_result_array[25]; // Array para receber o resultado de Gy
 
-        // Calculate gradient magnitude: G = sqrt(Gx^2 + Gy^2)
-        // The C driver clamps Gx and Gy results to [0,255].
-        int8_t magnitude = (int)sqrt((double)result_x * result_x + (double)result_y * result_y);
+            driver(sobel_x_kernel_5x5, region_s8, gx_result_array, 3, 2);
+            driver(sobel_y_kernel_5x5, region_s8, gy_result_array, 3, 2); 
+            
+            int8_t gx = gx_result_array[0];
+            int8_t gy = gy_result_array[0];
 
-        // Clamp the magnitude to [0, 255] and assign to output
-        output[y * width + x] = (unsigned char)(magnitude > 255 ? 255 : (magnitude < 0 ? 0 : magnitude));
+            int8_t magnitude = (int)sqrt((double)gx * gx + (double)gy * gy);            
+            
+            output[y * width + x] = magnitude;
         }
     }
 }
-
 unsigned char* convert_to_grayscale(const char* input_path, int* width, int* height) {
     int channels;
     unsigned char* img = stbi_load(input_path, width, height, &channels, 1);
