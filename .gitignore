@@ -8,3 +8,4 @@
 # Ignora executáveis gerado pelo Makefile em ambiente Linux
 main
 matrix_calculator
+
