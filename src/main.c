@@ -134,65 +134,6 @@ void show_menu() {
     printf("6 - Voltar ao menu principal\n");
 }
 
-void driver(int8_t* kernel, int8_t* region, uint8_t* result, int size, int opcode) {
-    if (size == 1) {
-        int sum = 0;
-        for (int i = 0; i < 3; i++) {
-            for (int e = 0; e < 3; e++) {
-                sum += kernel[i * 3 + e] * region[i * 3 + e];
-            }
-        }
-
-        if (sum >= 127) {
-            result[0] = 127;
-        }
-        else if (sum <= 0) {
-            result[0] = 0;
-        }
-        else {
-            result[0] = (int8_t)sum;
-        }
-    }
-
-    if (size == 3) {
-        int sum = 0;
-        for (int i = 0; i < 5; i++) {
-            for (int e = 0; e < 5; e++) {
-                sum += kernel[i * 5 + e] * region[i * 5 + e];
-            }
-        }
-
-        if (sum >= 127) {
-            result[0] = 127;
-        }
-        else if (sum <= 0) {
-            result[0] = 0;
-        }
-        else {
-            result[0] = (int8_t)sum;
-        }
-    }
-
-    if (size == 0) {
-        int sum = 0;
-        for (int i = 0; i < 2; i++) {
-            for (int e = 0; e < 2; e++) {
-                sum += kernel[i * 2 + e] * region[i * 2 + e];
-            }
-        }
-
-        if (sum >= 127) {
-            result[0] = 255;
-        }
-        else if (sum <= 0) {
-            result[0] = 0;
-        }
-        else {
-            result[0] = (int8_t)sum;
-        }
-    }
-}
-
 void apply_filter(unsigned char* gray_img, int width, int height, const char* output_path, int filter_type) {
     unsigned char* output = (unsigned char*)malloc(width * height * sizeof(unsigned char));
 
@@ -225,268 +166,239 @@ void apply_filter(unsigned char* gray_img, int width, int height, const char* ou
     free(output);
 }
 
+
+void driver(int8_t* kernel, int8_t* region, uint8_t* result, int size, int opcode) {
+    int sum = 0;
+    int kernel_dim = 0;
+
+    if (size == 0) { kernel_dim = 2; }
+    else if (size == 1) { kernel_dim = 3; }
+    else if (size == 3) { kernel_dim = 5; }
+
+    if (kernel_dim > 0) {
+        for (int i = 0; i < kernel_dim; i++) {
+            for (int e = 0; e < kernel_dim; e++) {
+                sum += kernel[i * kernel_dim + e] * region[i * kernel_dim + e];
+            }
+        }
+    }
+
+    if (opcode == 2) {
+        if (sum >= 127) {
+            result[0] = 127;
+        }
+        else if (sum <= 0) {
+            result[0] = 0;
+        }
+        else {
+            result[0] = sum;
+        }
+    }
+    else {
+        sum = (uint16_t)sum;
+        result[0] = (sum >> 8) & 0xFF;
+        result[1] = sum & 0xFF;
+    }
+}
+
 void apply_laplacian(unsigned char* gray_img, unsigned char* output, int width, int height) {
-    // Kernel Laplaciano
-    int8_t laplacian_kernel[] = {
-    0, 0, 1, 0, 0,
-    0, 1, 2, 1, 0,
-    1, 2,-16, 2, 1,
-    0, 1, 2, 1, 0,
-    0, 0, 1, 0, 0
+    int8_t laplacian_kernel[25] = {
+        0,  0, -1,  0,  0,
+        0, -1, -2, -1,  0,
+       -1, -2, 16, -2, -1,
+        0, -1, -2, -1,  0,
+        0,  0, -1,  0,  0
     };
-
-    // Tamanho do kernel (5x5)
     int kernel_size = 5;
-
-    // Metade do tamanho do kernel (para evitar processar bordas)
     int half_kernel = kernel_size / 2;
 
-    // Percorre cada pixel da imagem (exceto bordas)
     for (int y = half_kernel; y < height - half_kernel; y++) {
         for (int x = half_kernel; x < width - half_kernel; x++) {
-
-            // Extrai uma região 5x5 ao redor do pixel (y, x)
+            // CORRIGIDO: Usa o método de conversão padrão (- 128)
             int8_t region_s8[25];
-
             int idx = 0;
             for (int ky = -half_kernel; ky <= half_kernel; ky++) {
                 for (int kx = -half_kernel; kx <= half_kernel; kx++) {
-                    // Os pixels são convertidos para int8_t (-128 a 127) subtraindo 128
-                    region_s8[idx++] = (int8_t)(gray_img[(y + ky) * width + (x + kx)] / 2);
+                    region_s8[idx++] = (int8_t)(gray_img[(y + ky) * width + (x + kx)] - 128);
                 }
             }
 
-            // Armazena o resultado da convolução
-            uint8_t convolution_result_s8_array[25];
+            uint8_t result_bytes[25];
 
-            // Aplica a convolução usando o kernel Laplaciano
-            driver(laplacian_kernel, region_s8, convolution_result_s8_array, 3, 2);
+            driver(laplacian_kernel, region_s8, result_bytes, 3, 2); // Opcode não é mais especial
 
-            // Armazena o resultado no pixel de saída (convertendo para 0-255)
-            output[y * width + x] = (unsigned char)(convolution_result_s8_array[0] * 2);
+            output[y * width + x] = (unsigned char)result_bytes[0];
         }
     }
 }
-
 void apply_prewitt(unsigned char* gray_img, unsigned char* output, int width, int height) {
-    // Kernels de Prewitt para detecção de bordas em X e Y
-    int8_t prewitt_x_kernel[] = {
-    1, 0, -1,
-    1, 0, -1,
-    1, 0, -1
-    };
-
-    int8_t prewitt_y_kernel[] = {
-    -1, -1, -1,
-    0, 0, 0,
-    1, 1, 1
-    };
-
-    // Tamanho do kernel (3x3)
+    int8_t prewitt_x_kernel[9] = { -1, 0, 1, -1, 0, 1, -1, 0, 1 };
+    int8_t prewitt_y_kernel[9] = { -1, -1, -1, 0, 0, 0, 1, 1, 1 };
     int kernel_size = 3;
-
-    // Metade do tamanho do kernel (para evitar processar bordas)
     int half_kernel = kernel_size / 2;
 
-    // Percorre cada pixel da imagem (exceto bordas)
     for (int y = half_kernel; y < height - half_kernel; y++) {
         for (int x = half_kernel; x < width - half_kernel; x++) {
-
-            // Extrai uma região 3x3 ao redor do pixel (y, x)
-            uint8_t region_s8[9];
+            int8_t region_s8[9];
             int idx = 0;
-
             for (int ky = -half_kernel; ky <= half_kernel; ky++) {
                 for (int kx = -half_kernel; kx <= half_kernel; kx++) {
-                    // Converte pixels para int8_t (-128 a 127) subtraindo 128
-                    region_s8[idx++] = (uint8_t)(gray_img[(y + ky) * width + (x + kx)] / 16);
+                    region_s8[idx++] = (int8_t)(gray_img[(y + ky) * width + (x + kx)] - 128);
                 }
             }
 
-            // Resultados das convoluções em X e Y
-            uint8_t gx_result[9], gy_result[9];
+            // Arrays para receber os bytes de resultado da driver
+            // Mesmo que a driver só use as posições 0 e 1, o array precisa existir
+            uint8_t gx_result_bytes[9];
+            uint8_t gy_result_bytes[9];
 
-            // Aplica convolução nas direções X e Y
-            driver(prewitt_x_kernel, region_s8, gx_result, 1, 2);
-            //driver(prewitt_y_kernel, region_s8, gy_result, 1, 2);
+            driver(prewitt_x_kernel, region_s8, gx_result_bytes, 1, 1);
+            driver(prewitt_y_kernel, region_s8, gy_result_bytes, 1, 1);
 
-            // Calcula a magnitude do gradiente (aproximação)
-            int16_t gx = gx_result[0] * 16;
-            int16_t gy = gy_result[0] * 16;
-            int16_t magnitude = sqrt(pow(gx, 2) + pow(gy, 2));
+            // --- NOVA LÓGICA DE RECONSTRUÇÃO ---
+            // 1. Junte os dois bytes de Gx em um uint16_t (sem sinal)
+            uint16_t unsigned_gx = (uint16_t)(gx_result_bytes[0] << 8) | gx_result_bytes[1];
+            // 2. Junte os dois bytes de Gy em um uint16_t (sem sinal)
+            uint16_t unsigned_gy = (uint16_t)(gy_result_bytes[0] << 8) | gy_result_bytes[1];
 
-            if (magnitude >= 255) { magnitude = 255; }
-            else if (magnitude <= 0) { magnitude = 0; }
+            // 3. Converta (cast) o padrão de bits para int16_t (com sinal)
+            int16_t gx_final = (int16_t)unsigned_gx;
+            int16_t gy_final = (int16_t)unsigned_gy;
 
-            // Armazena o resultado (0-255)
-            output[y * width + x] = (unsigned char)(magnitude);
+            // Agora gx_final e gy_final contêm os valores corretos com sinal
+            int magnitude = (int)sqrt(pow(gx_final, 2) + pow(gy_final, 2));
+
+            if (magnitude > 255) magnitude = 255;
+            if (magnitude < 0) magnitude = 0;
+
+            output[y * width + x] = (unsigned char)magnitude;
         }
     }
 }
-
 void apply_roberts(unsigned char* gray_img, unsigned char* output, int width, int height) {
-    // Kernels de Roberts para detecção de bordas
-    int8_t roberts_x_kernel[] = {
-    1, 0,
-    0, -1
-    };
-
-    int8_t roberts_y_kernel[] = {
-    0, 1,
-    -1, 0
-    };
-
-    // Tamanho do kernel (2x2)
+    int8_t roberts_x_kernel[4] = { 1, 0, 0, -1 };
+    int8_t roberts_y_kernel[4] = { 0, 1, -1, 0 };
     int kernel_size = 2;
 
-    // Percorre cada pixel da imagem (exceto última linha e coluna)
     for (int y = 0; y < height - 1; y++) {
         for (int x = 0; x < width - 1; x++) {
-
-            // Extrai uma região 2x2 ao redor do pixel (y, x)
-            uint8_t region_s8[4];
+            int8_t region_s8[4];
             int idx = 0;
-
             for (int ky = 0; ky < kernel_size; ky++) {
                 for (int kx = 0; kx < kernel_size; kx++) {
-                    // Converte pixels para int8_t (-128 a 127) subtraindo 128
-                    region_s8[idx++] = (uint8_t)(gray_img[(y + ky) * width + (x + kx)] / 2);
+                    region_s8[idx++] = (int8_t)(gray_img[(y + ky) * width + (x + kx)] - 128);
                 }
             }
 
-            // Resultados das convoluções em X e Y
-            uint8_t gx_result[4], gy_result[4];
+            uint8_t gx_result_bytes[4];
+            uint8_t gy_result_bytes[4];
 
-            // Aplica convolução nas direções X e Y
-            driver(roberts_x_kernel, region_s8, gx_result, 0, 2);
-            driver(roberts_y_kernel, region_s8, gy_result, 0, 2);
+            driver(roberts_x_kernel, region_s8, gx_result_bytes, 0, 1);
+            driver(roberts_y_kernel, region_s8, gy_result_bytes, 0, 1);
 
-            // Calcula a magnitude do gradiente (aproximação)
-            int16_t gx = gx_result[0] * 2;
-            int16_t gy = gy_result[0] * 2;
-            int16_t magnitude = sqrt(pow(gx, 2) + pow(gy, 2));
+            uint16_t unsigned_gx = (uint16_t)(gx_result_bytes[0] << 8) | gx_result_bytes[1];
+            uint16_t unsigned_gy = (uint16_t)(gy_result_bytes[0] << 8) | gy_result_bytes[1];
 
-            if (magnitude >= 30) { magnitude = 255; }
-            else if (magnitude <= 0) { magnitude = 0; }
+            int16_t gx_final = (int16_t)unsigned_gx;
+            int16_t gy_final = (int16_t)unsigned_gy;
 
-            // Armazena o resultado (0-255)
-            output[y * width + x] = (unsigned char)(magnitude);
+            int magnitude = (int)sqrt(pow(gx_final, 2) + pow(gy_final, 2));
+
+            if (magnitude > 255) magnitude = 255;
+            if (magnitude < 0) magnitude = 0;
+
+            output[y * width + x] = (unsigned char)magnitude;
         }
     }
 }
-
 void apply_sobel_3x3(unsigned char* gray_img, unsigned char* output, int width, int height) {
-    // Kernels de Sobel para detecção de bordas em X e Y
-    int8_t sobel_x_kernel[] = {
-    -1, 0, 1,
-    -2, 0, 2,
-    -1, 0, 1
-    };
-
-    int8_t sobel_y_kernel[] = {
-    -1, -2, -1,
-    0, 0, 0,
-    1, 2, 1
-    };
-
-    // Tamanho do kernel (3x3)
+    int8_t sobel_x_kernel[9] = { -1, 0, 1, -2, 0, 2, -1, 0, 1 };
+    int8_t sobel_y_kernel[9] = { -1, -2, -1, 0, 0, 0, 1, 2, 1 };
     int kernel_size = 3;
-
-    // Metade do tamanho do kernel (para evitar processar bordas)
     int half_kernel = kernel_size / 2;
 
-    // Percorre cada pixel da imagem (exceto bordas)
     for (int y = half_kernel; y < height - half_kernel; y++) {
         for (int x = half_kernel; x < width - half_kernel; x++) {
-
-            // Extrai uma região 3x3 ao redor do pixel (y, x)
-            uint8_t region_s8[9];
+            int8_t region_s8[9];
             int idx = 0;
-
             for (int ky = -half_kernel; ky <= half_kernel; ky++) {
                 for (int kx = -half_kernel; kx <= half_kernel; kx++) {
-                    // Converte pixels para int8_t (-128 a 127) subtraindo 128
-                    region_s8[idx++] = (uint8_t)(gray_img[(y + ky) * width + (x + kx)] / 4);
+                    region_s8[idx++] = (int8_t)(gray_img[(y + ky) * width + (x + kx)] - 128);
                 }
             }
 
-            // Resultados das convoluções em X e Y
-            uint8_t gx_result[9], gy_result[9];
+            uint8_t gx_result_bytes[9];
+            uint8_t gy_result_bytes[9];
 
-            // Aplica convolução nas direções X e Y
-            driver(sobel_x_kernel, region_s8, gx_result, 1, 2);
-            driver(sobel_y_kernel, region_s8, gy_result, 1, 2);
+            driver(sobel_x_kernel, region_s8, gx_result_bytes, 1, 1);
+            driver(sobel_y_kernel, region_s8, gy_result_bytes, 1, 1);
 
-            // Calcula a magnitude do gradiente (aproximação)
-            int16_t gx = gx_result[0] * 4;
-            int16_t gy = gy_result[0] * 4;
-            int16_t magnitude = sqrt(pow(gx, 2) + pow(gy, 2));
+            uint16_t unsigned_gx = (uint16_t)(gx_result_bytes[0] << 8) | gx_result_bytes[1];
+            uint16_t unsigned_gy = (uint16_t)(gy_result_bytes[0] << 8) | gy_result_bytes[1];
 
-            if (magnitude >= 255) { magnitude = 255; }
-            else if (magnitude <= 0) { magnitude = 0; }
+            int16_t gx_final = (int16_t)unsigned_gx;
+            int16_t gy_final = (int16_t)unsigned_gy;
 
-            // Armazena o resultado (0-255)
-            output[y * width + x] = (unsigned char)(magnitude);
+            int magnitude = (int)sqrt(pow(gx_final, 2) + pow(gy_final, 2));
+
+            if (magnitude > 255) magnitude = 255;
+            if (magnitude < 0) magnitude = 0;
+
+            output[y * width + x] = (unsigned char)magnitude;
         }
     }
 }
-
 void apply_sobel_5x5(unsigned char* gray_img, unsigned char* output, int width, int height) {
-    // Kernels de Sobel expandidos para detecção de bordas em X e Y (5x5)
-    int8_t sobel_x_kernel[] = {
-    -1, -2, 0, 2, 1,
-    -2, -3, 0, 3, 2,
-    -3, -5, 0, 5, 3,
-    -2, -3, 0, 3, 2,
-    -1, -2, 0, 2, 1
+    int8_t sobel_x_kernel[25] = {
+        -2, -4, 0, 4, 2,
+        -4, -8, 0, 8, 4,
+        -6, -12, 0, 12, 6,
+        -4, -8, 0, 8, 4,
+        -2, -4, 0, 4, 2
     };
-
-    int8_t sobel_y_kernel[] = {
-    -1, -2, -3, -2, -1,
-    -2, -3, -5, -3, -2,
-    0, 0, 0, 0, 0,
-    2, 3, 5, 3, 2,
-    1, 2, 3, 2, 1
+    int8_t sobel_y_kernel[25] = {
+        -2, -4, -6, -4, -2,
+        -4, -8, -12, -8, -4,
+         0,  0,  0,  0,  0,
+         4,  8, 12,  8,  4,
+         2,  4,  6,  4,  2
     };
-
-    // Tamanho do kernel (5x5)
     int kernel_size = 5;
-
-    // Metade do tamanho do kernel (para evitar processar bordas)
     int half_kernel = kernel_size / 2;
 
-    // Percorre cada pixel da imagem (exceto bordas)
     for (int y = half_kernel; y < height - half_kernel; y++) {
         for (int x = half_kernel; x < width - half_kernel; x++) {
-
-            // Extrai uma região 5x5 ao redor do pixel (y, x)
-            uint8_t region_s8[25];
+            int8_t region_s8[25];
             int idx = 0;
-
             for (int ky = -half_kernel; ky <= half_kernel; ky++) {
                 for (int kx = -half_kernel; kx <= half_kernel; kx++) {
-                    // Converte pixels para int8_t (-128 a 127) subtraindo 128
-                    region_s8[idx++] = (uint8_t)(gray_img[(y + ky) * width + (x + kx)] / 32);
+                    region_s8[idx++] = (int8_t)(gray_img[(y + ky) * width + (x + kx)] - 128);
                 }
             }
 
-            // Resultados das convoluções em X e Y
-            uint8_t gx_result[25], gy_result[25];
+            uint8_t gx_result_bytes[25];
+            uint8_t gy_result_bytes[25];
 
-            // Aplica convolução nas direções X e Y
-            driver(sobel_x_kernel, region_s8, gx_result, 3, 2);
-            driver(sobel_y_kernel, region_s8, gy_result, 3, 2);
+            driver(sobel_x_kernel, region_s8, gx_result_bytes, 3, 1);
+            driver(sobel_y_kernel, region_s8, gy_result_bytes, 3, 1);
 
-            // Calcula a magnitude do gradiente (aproximação)
-            int16_t gx = gx_result[0] * 32;
-            int16_t gy = gy_result[0] * 32;
-            int16_t magnitude = sqrt(pow(gx, 2) + pow(gy, 2));
+            uint16_t unsigned_gx = (uint16_t)(gx_result_bytes[0] << 8) | gx_result_bytes[1];
+            uint16_t unsigned_gy = (uint16_t)(gy_result_bytes[0] << 8) | gy_result_bytes[1];
 
-            if (magnitude >= 255) { magnitude = 255; }
-            else if (magnitude <= 0) { magnitude = 0; }
+            int16_t gx_final = (int16_t)unsigned_gx;
+            int16_t gy_final = (int16_t)unsigned_gy;
 
-            // Armazena o resultado (0-255)
-            output[y * width + x] = (unsigned char)(magnitude);
+            int magnitude = (int)sqrt(pow(gx_final, 2) + pow(gy_final, 2));
+
+            // CORRIGIDO: Escala a magnitude para reduzir o " estouro"
+            // Deslocar 3 bits para a direita é o mesmo que dividir por 8.
+            // Isso ajuda a trazer os valores altos para a faixa de 0-255.
+            magnitude = magnitude >> 3;
+
+            if (magnitude > 255) magnitude = 255;
+            if (magnitude < 0) magnitude = 0;
+
+            output[y * width + x] = (unsigned char)magnitude;
         }
     }
 }
