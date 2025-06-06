@@ -169,21 +169,16 @@ void apply_filter(unsigned char* gray_img, int width, int height, const char* ou
 
 void driver(int8_t* kernel, int8_t* region, uint8_t* result, int size, int opcode) {
     int sum = 0;
-    int kernel_dim = 0;
+    const int kernel_dim = 5; // Sempre 5x5 agora
 
-    if (size == 0) { kernel_dim = 2; }
-    else if (size == 1) { kernel_dim = 3; }
-    else if (size == 3) { kernel_dim = 5; }
-
-    if (kernel_dim > 0) {
-        for (int i = 0; i < kernel_dim; i++) {
-            for (int e = 0; e < kernel_dim; e++) {
-                sum += kernel[i * kernel_dim + e] * region[i * kernel_dim + e];
-            }
+    for (int i = 0; i < kernel_dim; i++) {
+        for (int e = 0; e < kernel_dim; e++) {
+            sum += kernel[i * kernel_dim + e] * region[i * kernel_dim + e];
         }
     }
 
     if (opcode == 2) {
+        // Para Laplaciano (opcode 2)
         if (sum >= 127) {
             result[0] = 127;
         }
@@ -195,6 +190,7 @@ void driver(int8_t* kernel, int8_t* region, uint8_t* result, int size, int opcod
         }
     }
     else {
+        // Para outros filtros (opcode 1)
         sum = (uint16_t)sum;
         result[0] = (sum >> 8) & 0xFF;
         result[1] = sum & 0xFF;
@@ -202,6 +198,7 @@ void driver(int8_t* kernel, int8_t* region, uint8_t* result, int size, int opcod
 }
 
 void apply_laplacian(unsigned char* gray_img, unsigned char* output, int width, int height) {
+    // Kernel Laplaciano 5x5 (original)
     int8_t laplacian_kernel[25] = {
         0,  0, -1,  0,  0,
         0, -1, -2, -1,  0,
@@ -209,12 +206,12 @@ void apply_laplacian(unsigned char* gray_img, unsigned char* output, int width, 
         0, -1, -2, -1,  0,
         0,  0, -1,  0,  0
     };
-    int kernel_size = 5;
-    int half_kernel = kernel_size / 2;
+
+    const int kernel_size = 5;
+    const int half_kernel = kernel_size / 2;
 
     for (int y = half_kernel; y < height - half_kernel; y++) {
         for (int x = half_kernel; x < width - half_kernel; x++) {
-            // CORRIGIDO: Usa o método de conversão padrão (- 128)
             int8_t region_s8[25];
             int idx = 0;
             for (int ky = -half_kernel; ky <= half_kernel; ky++) {
@@ -224,22 +221,38 @@ void apply_laplacian(unsigned char* gray_img, unsigned char* output, int width, 
             }
 
             uint8_t result_bytes[25];
-
-            driver(laplacian_kernel, region_s8, result_bytes, 3, 2); // Opcode não é mais especial
-
+            driver(laplacian_kernel, region_s8, result_bytes, 3, 2);
             output[y * width + x] = (unsigned char)result_bytes[0];
         }
     }
 }
+
 void apply_prewitt(unsigned char* gray_img, unsigned char* output, int width, int height) {
-    int8_t prewitt_x_kernel[9] = { -1, 0, 1, -1, 0, 1, -1, 0, 1 };
-    int8_t prewitt_y_kernel[9] = { -1, -1, -1, 0, 0, 0, 1, 1, 1 };
-    int kernel_size = 3;
-    int half_kernel = kernel_size / 2;
+    // Kernel Prewitt X 5x5 (3x3 centralizado com zeros ao redor)
+    int8_t prewitt_x_kernel[25] = {
+        0,  0,  0,  0,  0,
+        0, -1,  0,  1,  0,
+        0, -1,  0,  1,  0,
+        0, -1,  0,  1,  0,
+        0,  0,  0,  0,  0
+    };
+
+    // Kernel Prewitt Y 5x5 (3x3 centralizado com zeros ao redor)
+    int8_t prewitt_y_kernel[25] = {
+        0,  0,  0,  0,  0,
+        0, -1, -1, -1,  0,
+        0,  0,  0,  0,  0,
+        0,  1,  1,  1,  0,
+        0,  0,  0,  0,  0
+    };
+
+    const int kernel_size = 5;
+    const int half_kernel = kernel_size / 2;
 
     for (int y = half_kernel; y < height - half_kernel; y++) {
         for (int x = half_kernel; x < width - half_kernel; x++) {
-            int8_t region_s8[9];
+            int8_t region_s8[25];
+            
             int idx = 0;
             for (int ky = -half_kernel; ky <= half_kernel; ky++) {
                 for (int kx = -half_kernel; kx <= half_kernel; kx++) {
@@ -247,25 +260,18 @@ void apply_prewitt(unsigned char* gray_img, unsigned char* output, int width, in
                 }
             }
 
-            // Arrays para receber os bytes de resultado da driver
-            // Mesmo que a driver só use as posições 0 e 1, o array precisa existir
-            uint8_t gx_result_bytes[9];
-            uint8_t gy_result_bytes[9];
+            uint8_t gx_result_bytes[25];
+            uint8_t gy_result_bytes[25];
 
             driver(prewitt_x_kernel, region_s8, gx_result_bytes, 1, 1);
             driver(prewitt_y_kernel, region_s8, gy_result_bytes, 1, 1);
 
-            // --- NOVA LÓGICA DE RECONSTRUÇÃO ---
-            // 1. Junte os dois bytes de Gx em um uint16_t (sem sinal)
             uint16_t unsigned_gx = (uint16_t)(gx_result_bytes[0] << 8) | gx_result_bytes[1];
-            // 2. Junte os dois bytes de Gy em um uint16_t (sem sinal)
             uint16_t unsigned_gy = (uint16_t)(gy_result_bytes[0] << 8) | gy_result_bytes[1];
 
-            // 3. Converta (cast) o padrão de bits para int16_t (com sinal)
             int16_t gx_final = (int16_t)unsigned_gx;
             int16_t gy_final = (int16_t)unsigned_gy;
 
-            // Agora gx_final e gy_final contêm os valores corretos com sinal
             int magnitude = (int)sqrt(pow(gx_final, 2) + pow(gy_final, 2));
 
             if (magnitude > 255) magnitude = 255;
@@ -275,23 +281,41 @@ void apply_prewitt(unsigned char* gray_img, unsigned char* output, int width, in
         }
     }
 }
-void apply_roberts(unsigned char* gray_img, unsigned char* output, int width, int height) {
-    int8_t roberts_x_kernel[4] = { 1, 0, 0, -1 };
-    int8_t roberts_y_kernel[4] = { 0, 1, -1, 0 };
-    int kernel_size = 2;
 
-    for (int y = 0; y < height - 1; y++) {
-        for (int x = 0; x < width - 1; x++) {
-            int8_t region_s8[4];
+void apply_roberts(unsigned char* gray_img, unsigned char* output, int width, int height) {
+    // Kernel Roberts X 5x5 (2x2 no canto superior esquerdo com zeros ao redor)
+    int8_t roberts_x_kernel[25] = {
+        1,  0,  0,  0,  0,
+        0, -1,  0,  0,  0,
+        0,  0,  0,  0,  0,
+        0,  0,  0,  0,  0,
+        0,  0,  0,  0,  0
+    };
+
+    // Kernel Roberts Y 5x5 (2x2 no canto superior esquerdo com zeros ao redor)
+    int8_t roberts_y_kernel[25] = {
+        0,  1,  0,  0,  0,
+       -1,  0,  0,  0,  0,
+        0,  0,  0,  0,  0,
+        0,  0,  0,  0,  0,
+        0,  0,  0,  0,  0
+    };
+
+    const int kernel_size = 5;
+    const int half_kernel = kernel_size / 2;
+
+    for (int y = half_kernel; y < height - half_kernel; y++) {
+        for (int x = half_kernel; x < width - half_kernel; x++) {
+            int8_t region_s8[25];
             int idx = 0;
-            for (int ky = 0; ky < kernel_size; ky++) {
-                for (int kx = 0; kx < kernel_size; kx++) {
+            for (int ky = -half_kernel; ky <= half_kernel; ky++) {
+                for (int kx = -half_kernel; kx <= half_kernel; kx++) {
                     region_s8[idx++] = (int8_t)(gray_img[(y + ky) * width + (x + kx)] - 128);
                 }
             }
 
-            uint8_t gx_result_bytes[4];
-            uint8_t gy_result_bytes[4];
+            uint8_t gx_result_bytes[25];
+            uint8_t gy_result_bytes[25];
 
             driver(roberts_x_kernel, region_s8, gx_result_bytes, 0, 1);
             driver(roberts_y_kernel, region_s8, gy_result_bytes, 0, 1);
@@ -311,15 +335,32 @@ void apply_roberts(unsigned char* gray_img, unsigned char* output, int width, in
         }
     }
 }
+
 void apply_sobel_3x3(unsigned char* gray_img, unsigned char* output, int width, int height) {
-    int8_t sobel_x_kernel[9] = { -1, 0, 1, -2, 0, 2, -1, 0, 1 };
-    int8_t sobel_y_kernel[9] = { -1, -2, -1, 0, 0, 0, 1, 2, 1 };
-    int kernel_size = 3;
-    int half_kernel = kernel_size / 2;
+    // Kernel Sobel X 5x5 (3x3 centralizado com zeros ao redor)
+    int8_t sobel_x_kernel[25] = {
+        0,  0,  0,  0,  0,
+        0, -1,  0,  1,  0,
+        0, -2,  0,  2,  0,
+        0, -1,  0,  1,  0,
+        0,  0,  0,  0,  0
+    };
+
+    // Kernel Sobel Y 5x5 (3x3 centralizado com zeros ao redor)
+    int8_t sobel_y_kernel[25] = {
+        0,  0,  0,  0,  0,
+        0, -1, -2, -1,  0,
+        0,  0,  0,  0,  0,
+        0,  1,  2,  1,  0,
+        0,  0,  0,  0,  0
+    };
+
+    const int kernel_size = 5;
+    const int half_kernel = kernel_size / 2;
 
     for (int y = half_kernel; y < height - half_kernel; y++) {
         for (int x = half_kernel; x < width - half_kernel; x++) {
-            int8_t region_s8[9];
+            int8_t region_s8[25];
             int idx = 0;
             for (int ky = -half_kernel; ky <= half_kernel; ky++) {
                 for (int kx = -half_kernel; kx <= half_kernel; kx++) {
@@ -327,8 +368,8 @@ void apply_sobel_3x3(unsigned char* gray_img, unsigned char* output, int width, 
                 }
             }
 
-            uint8_t gx_result_bytes[9];
-            uint8_t gy_result_bytes[9];
+            uint8_t gx_result_bytes[25];
+            uint8_t gy_result_bytes[25];
 
             driver(sobel_x_kernel, region_s8, gx_result_bytes, 1, 1);
             driver(sobel_y_kernel, region_s8, gy_result_bytes, 1, 1);
@@ -348,7 +389,9 @@ void apply_sobel_3x3(unsigned char* gray_img, unsigned char* output, int width, 
         }
     }
 }
+
 void apply_sobel_5x5(unsigned char* gray_img, unsigned char* output, int width, int height) {
+    // Kernel Sobel X 5x5 (original)
     int8_t sobel_x_kernel[25] = {
         -2, -4, 0, 4, 2,
         -4, -8, 0, 8, 4,
@@ -356,6 +399,8 @@ void apply_sobel_5x5(unsigned char* gray_img, unsigned char* output, int width, 
         -4, -8, 0, 8, 4,
         -2, -4, 0, 4, 2
     };
+
+    // Kernel Sobel Y 5x5 (original)
     int8_t sobel_y_kernel[25] = {
         -2, -4, -6, -4, -2,
         -4, -8, -12, -8, -4,
@@ -363,8 +408,9 @@ void apply_sobel_5x5(unsigned char* gray_img, unsigned char* output, int width, 
          4,  8, 12,  8,  4,
          2,  4,  6,  4,  2
     };
-    int kernel_size = 5;
-    int half_kernel = kernel_size / 2;
+
+    const int kernel_size = 5;
+    const int half_kernel = kernel_size / 2;
 
     for (int y = half_kernel; y < height - half_kernel; y++) {
         for (int x = half_kernel; x < width - half_kernel; x++) {
@@ -389,11 +435,7 @@ void apply_sobel_5x5(unsigned char* gray_img, unsigned char* output, int width, 
             int16_t gy_final = (int16_t)unsigned_gy;
 
             int magnitude = (int)sqrt(pow(gx_final, 2) + pow(gy_final, 2));
-
-            // CORRIGIDO: Escala a magnitude para reduzir o " estouro"
-            // Deslocar 3 bits para a direita é o mesmo que dividir por 8.
-            // Isso ajuda a trazer os valores altos para a faixa de 0-255.
-            magnitude = magnitude >> 3;
+            magnitude = magnitude >> 3; // Dividir por 8 para ajustar a escala
 
             if (magnitude > 255) magnitude = 255;
             if (magnitude < 0) magnitude = 0;
